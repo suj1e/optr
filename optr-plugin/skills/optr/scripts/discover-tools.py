@@ -8,10 +8,12 @@ Usage:
     python scripts/discover-tools.py [path/to/PLAN.md]
 
 This script:
-1. Scans ~/.claude/plugins for available tools
-2. Extracts keywords and trigger phrases from tool descriptions
-3. Matches PLAN.md content to relevant tools
-4. Outputs a list of matched tools with relevance scores
+1. Scans project-local directories (.claude/skills, skills/, etc.)
+2. Scans ~/.claude/plugins for global tools
+3. Searches online for relevant tools and best practices
+4. Extracts keywords and trigger phrases from tool descriptions
+5. Matches PLAN.md content to relevant tools
+6. Outputs a list of matched tools with relevance scores
 """
 
 import sys
@@ -150,37 +152,60 @@ def calculate_online_relevance(title, snippet):
     return score
 
 
-def merge_tools(local_tools, online_tools):
-    """Merge local and online tools, removing duplicates."""
+def merge_tools(local_tools, online_tools, project_tools=None):
+    """
+    Merge project, local, and online tools, removing duplicates.
+
+    Priority order:
+    1. Project-local tools (highest priority)
+    2. Global local tools (~/.claude/plugins)
+    3. Online tools
+    """
+    if project_tools is None:
+        project_tools = {'skills': [], 'agents': [], 'commands': []}
+
     merged = []
     seen_names = set()
 
-    # Process local tools first (higher priority)
-    all_local = (
-        local_tools['skills'] +
-        local_tools['agents'] +
-        local_tools['commands']
-    )
+    # Priority levels for sorting
+    source_priority = {
+        'project': 3,
+        'local': 2,
+        'online': 1
+    }
 
-    for tool in all_local:
-        name_key = f"{tool['type']}:{tool['name'].lower()}"
-        if name_key not in seen_names:
-            seen_names.add(name_key)
-            merged.append({
-                **tool,
-                'source': 'local',
-                'relevance_score': 5  # Local tools get base score
-            })
+    # Collect all tools with their sources
+    all_tools = []
+
+    # Add project tools
+    for tool in project_tools['skills'] + project_tools['agents'] + project_tools['commands']:
+        tool_copy = dict(tool)
+        tool_copy['source'] = 'project'
+        tool_copy['relevance_score'] = 10  # Highest base score
+        all_tools.append(tool_copy)
+
+    # Add global local tools
+    for tool in local_tools['skills'] + local_tools['agents'] + local_tools['commands']:
+        tool_copy = dict(tool)
+        tool_copy['source'] = 'local'
+        tool_copy['relevance_score'] = 5  # Base score
+        all_tools.append(tool_copy)
 
     # Add online tools
     for tool in online_tools:
-        name_key = f"{tool['type']}:{tool['name'].lower()}"
+        tool_copy = dict(tool)
+        tool_copy['source'] = 'online'
+        all_tools.append(tool_copy)
+
+    # Deduplicate and merge
+    for tool in all_tools:
+        name_key = f"{tool.get('type', 'unknown')}:{tool['name'].lower()}"
         if name_key not in seen_names:
             seen_names.add(name_key)
             merged.append(tool)
 
-    # Sort by relevance score, then by source (local first)
-    merged.sort(key=lambda x: (x.get('source') == 'local', x.get('relevance_score', 0)), reverse=True)
+    # Sort by priority (project > local > online), then by relevance score
+    merged.sort(key=lambda x: (source_priority.get(x.get('source'), 0), x.get('relevance_score', 0)), reverse=True)
 
     return merged
 
@@ -193,7 +218,7 @@ def score_tools(merged_tools, plan_keywords):
         score = 0
         matched_keywords = []
 
-        # Base score from online/local
+        # Base score from relevance_score
         score += tool.get('relevance_score', 0)
 
         # Keyword matching
@@ -205,9 +230,12 @@ def score_tools(merged_tools, plan_keywords):
                     if keyword not in matched_keywords:
                         matched_keywords.append(keyword)
 
-        # Bonus for local tools (more reliable)
-        if tool.get('source') == 'local':
-            score += 2
+        # Bonus for source reliability
+        source = tool.get('source', 'unknown')
+        if source == 'project':
+            score += 5  # Project tools get highest bonus
+        elif source == 'local':
+            score += 3  # Global local tools get bonus
 
         scored.append({
             'tool': tool,
@@ -222,7 +250,7 @@ def score_tools(merged_tools, plan_keywords):
 
 
 def scan_tools():
-    """Scan Claude plugins directory for available tools."""
+    """Scan Claude plugins directory and project-local tools for available tools."""
     tools = {
         'skills': [],
         'agents': [],
@@ -248,6 +276,69 @@ def scan_tools():
         tool_info = parse_command_file(command_file)
         if tool_info:
             tools['commands'].append(tool_info)
+
+    return tools
+
+
+def scan_project_tools():
+    """
+    Scan project-local directories for skills, agents, and commands.
+
+    Scans:
+    - .claude/skills/, skills/
+    - .claude/agents/, agents/
+    - .claude/commands/, commands/
+
+    Returns:
+        Dict with 'skills', 'agents', 'commands' lists
+    """
+    tools = {
+        'skills': [],
+        'agents': [],
+        'commands': []
+    }
+
+    project_root = Path.cwd()
+
+    # Directories to scan for each type
+    skill_dirs = ['.claude/skills', 'skills']
+    agent_dirs = ['.claude/agents', 'agents']
+    command_dirs = ['.claude/commands', 'commands']
+
+    # Scan project skills
+    for skill_dir in skill_dirs:
+        dir_path = project_root / skill_dir
+        if dir_path.exists():
+            for skill_file in dir_path.rglob('SKILL.md'):
+                tool_info = parse_skill_file(skill_file)
+                if tool_info:
+                    tool_info['source'] = 'project'
+                    tools['skills'].append(tool_info)
+
+    # Scan project agents
+    for agent_dir in agent_dirs:
+        dir_path = project_root / agent_dir
+        if dir_path.exists():
+            for agent_file in dir_path.rglob('*.md'):
+                # Exclude SKILL.md files
+                if agent_file.name == 'SKILL.md':
+                    continue
+                tool_info = parse_agent_file(agent_file)
+                if tool_info:
+                    tool_info['source'] = 'project'
+                    tools['agents'].append(tool_info)
+
+    # Scan project commands
+    for command_dir in command_dirs:
+        dir_path = project_root / command_dir
+        if dir_path.exists():
+            for command_file in dir_path.rglob('*.md'):
+                if command_file.name == 'SKILL.md':
+                    continue
+                tool_info = parse_command_file(command_file)
+                if tool_info:
+                    tool_info['source'] = 'project'
+                    tools['commands'].append(tool_info)
 
     return tools
 
@@ -425,6 +516,11 @@ def generate_recommendation_reason(tool, score, matched_keywords):
     """Generate a human-readable recommendation reason."""
     source = tool.get('source', 'unknown')
 
+    if source == 'project':
+        if matched_keywords:
+            return f"Project tool matching: {', '.join(matched_keywords[:3])}"
+        return "Project-local tool - ready to use"
+
     if source == 'local':
         if matched_keywords:
             return f"Local tool matching: {', '.join(matched_keywords[:3])}"
@@ -438,31 +534,48 @@ def generate_recommendation_reason(tool, score, matched_keywords):
     return "General optimization tool"
 
 
-def print_report(local_tools, online_tools, scored_matches):
+def print_report(local_tools, online_tools, scored_matches, project_tools=None):
     """Print discovery and matching report."""
+    if project_tools is None:
+        project_tools = {'skills': [], 'agents': [], 'commands': []}
+
     print("\n" + "="*60)
     print("OPTR Tool Discovery Report")
     print("="*60)
 
     # Summary
-    print(f"\n📊 Local Tools Found:")
+    print(f"\n📊 Project-local Tools:")
+    print(f"  Skills: {len(project_tools['skills'])}")
+    print(f"  Agents: {len(project_tools['agents'])}")
+    print(f"  Commands: {len(project_tools['commands'])}")
+
+    print(f"\n📦 Global Local Tools:")
     print(f"  Skills: {len(local_tools['skills'])}")
     print(f"  Agents: {len(local_tools['agents'])}")
     print(f"  Commands: {len(local_tools['commands'])}")
-    print(f"  Online Resources: {len(online_tools)}")
+
+    print(f"\n🌐 Online Resources: {len(online_tools)}")
 
     if scored_matches:
-        print(f"\n🎯 Recommended Tools:")
+        print(f"\n🎯 Recommended Tools (priority: project > local > online):")
         print("-" * 60)
 
         for i, match in enumerate(scored_matches[:10], 1):  # Top 10
             tool = match['tool']
-            source_icon = "🏠" if tool.get('source') == 'local' else "🌐"
-            source_label = tool.get('source', 'unknown').upper()
+            source = tool.get('source', 'unknown')
+
+            if source == 'project':
+                source_icon = "📁"
+            elif source == 'local':
+                source_icon = "🏠"
+            else:
+                source_icon = "🌐"
+
+            source_label = source.upper()
 
             print(f"\n  {i}. {source_icon} [{source_label}] {tool['name']}")
             print(f"     Description: {tool.get('description', 'N/A')[:70]}...")
-            print(f"     Source: {tool['type']} | Matched: {', '.join(match['matched_keywords'][:3]) or 'none'}")
+            print(f"     Type: {tool['type']} | Matched: {', '.join(match['matched_keywords'][:3]) or 'none'}")
             print(f"     Reason: {match['reason']}")
     else:
         print("\n⚠️  No direct tool matches found. Using general optimization.")
@@ -560,8 +673,12 @@ def main():
     # Extract keywords from plan for searching
     plan_keywords = extract_keywords_from_plan(plan_content)
 
-    # Scan for local tools
-    print("🔍 Scanning for local tools...")
+    # Scan for project-local tools
+    print("📁 Scanning for project-local tools...")
+    project_tools = scan_project_tools()
+
+    # Scan for global local tools
+    print("🔍 Scanning for global local tools...")
     local_tools = scan_tools()
 
     # Search for online tools
@@ -570,11 +687,11 @@ def main():
 
     # Merge and score all tools
     print("📊 Merging and scoring tools...")
-    merged_tools = merge_tools(local_tools, online_tools)
+    merged_tools = merge_tools(local_tools, online_tools, project_tools)
     scored_matches = score_tools(merged_tools, plan_keywords)
 
     # Print report
-    print_report(local_tools, online_tools, scored_matches)
+    print_report(local_tools, online_tools, scored_matches, project_tools)
 
     # User selection (skip in JSON mode or non-interactive)
     if '--json' not in sys.argv:
@@ -585,6 +702,7 @@ def main():
     # Optionally output JSON for programmatic use
     if '--json' in sys.argv:
         output = {
+            'project_tools': project_tools,
             'local_tools': local_tools,
             'online_tools': online_tools,
             'matched_tools': [
