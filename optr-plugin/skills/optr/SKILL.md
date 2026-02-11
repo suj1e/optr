@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.5.0
+version: 0.6.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -241,30 +241,71 @@ After all tasks complete:
 1. Use SendMessage to request shutdown from each teammate
 2. Use TeamDelete to clean up team resources
 
-### Step 9: Auto-Update Project Documentation & Scripts
+### Step 9: PLAN.md Completion Check
+
+Verify all tasks are completed before proceeding:
+
+1. **Check task status:**
+```bash
+TaskList
+```
+
+2. **Verify all tasks complete:**
+   - If any tasks remain incomplete: Inform user, do NOT clear PLAN.md
+   - If all tasks complete: Proceed to Step 9 (documentation sync)
+
+3. **Only when all tasks complete:** Continue to documentation sync
+
+### Step 10: PLAN.md Clear Confirmation
+
+After ALL tasks are complete and documentation is synced, ask user about PLAN.md:
+
+**Ask the user:**
+```
+✅ All tasks completed!
+
+Options:
+  [y] Clear PLAN.md (reset to template for next use)
+  [n] Keep PLAN.md with completion status
+  [q] Quit, PLAN.md unchanged
+
+👉 Clear PLAN.md? [y/n/q]:
+```
+
+**Process user choice:**
+- If `y`: Reset PLAN.md to template (keep header only)
+- If `n`: Keep PLAN.md as-is (with completed tasks marked)
+- If `q`: Exit without changes
+
+**Example clearing:**
+```bash
+# Reset PLAN.md to template
+cat > PLAN.md << 'EOF'
+# PLAN
+
+_Start: YYYY-MM-DD_
+EOF
+```
+
+### Step 11: Auto-Update Project Documentation & Scripts
 
 After team shutdown and task completion, automatically synchronize all project documentation and scripts:
 
 **Documents to update:**
 
-1. **PLAN.md** - Update task completion status:
-   - Mark completed tasks with `[x]`
-   - Update phase progress indicators
-   - Add notes about any changes or learnings
-
-2. **README.md** - Reflect current project state:
+1. **README.md** - Reflect current project state:
    - Update installation instructions if changed
    - Add new commands or workflows
    - Update feature list based on completed work
    - Refresh examples with current patterns
 
-3. **CLAUDE.md** - Sync with project architecture:
+2. **CLAUDE.md** - Sync with project architecture:
    - Update command references (build, test, lint)
    - Document new architectural patterns
    - Add new utility scripts
    - Update structure overview if codebase changed
 
-4. **Plugin files** (if this is a plugin project):
+3. **Plugin files** (if this is a plugin project):
    - Update `optr-plugin/skills/optr/SKILL.md` with new workflows
    - Refresh `optr-plugin/README.md` with new capabilities
    - Update version in `optr-plugin/.claude-plugin/plugin.json`
@@ -337,7 +378,9 @@ git commit -m "docs: update project documentation after task completion"
 - **Clear dependencies** - use blocks/blockedBy to prevent blocking
 - **Monitor progress** - check TaskList regularly
 - **Clean shutdown** - always terminate teammates and delete team
-- **Sync documentation** - auto-update all docs after task completion (Step 9)
+- **Verify all tasks complete** - only clear PLAN.md when ALL tasks done (Step 9)
+- **Ask before clearing** - let user decide whether to reset PLAN.md (Step 10)
+- **Sync documentation** - auto-update docs after task completion (Step 11)
 
 ## Handling Missing PLAN.md
 
