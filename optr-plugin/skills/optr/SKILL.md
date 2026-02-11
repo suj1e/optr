@@ -1,7 +1,7 @@
 ---
 name: OPTR - Optimizer & Team Runner
-description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation upon completion.
-version: 0.2.0
+description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
+version: 0.3.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -229,9 +229,9 @@ After all tasks complete:
 1. Use SendMessage to request shutdown from each teammate
 2. Use TeamDelete to clean up team resources
 
-### Step 9: Auto-Update Project Documentation
+### Step 9: Auto-Update Project Documentation & Scripts
 
-After team shutdown and task completion, automatically synchronize all project documentation:
+After team shutdown and task completion, automatically synchronize all project documentation and scripts:
 
 **Documents to update:**
 
@@ -257,14 +257,28 @@ After team shutdown and task completion, automatically synchronize all project d
    - Refresh `optr-plugin/README.md` with new capabilities
    - Update version in `optr-plugin/.claude-plugin/plugin.json`
 
-**Update workflow:**
+**Scripts to check and update:**
+
+1. **Shebang check** - Ensure executable scripts have `#!/usr/bin/env python3`
+2. **Reference validation** - Check for broken paths or missing imports
+3. **Version sync** - Ensure version numbers are consistent across scripts
+4. **TODO/FIXME tracking** - Report any pending items
+5. **Code quality** - Check for print statements vs logging
+6. **Docstring verification** - Ensure scripts have module docstrings
+
+**Use sync-docs.py script:**
 
 ```bash
-# Check which documents exist
-ls -la | grep -E "(PLAN|README|CLAUDE)\.md"
+# Run automatic sync
+python3 optr-plugin/skills/optr/scripts/sync-docs.py
 
-# Update each document using Edit tool
-# Preserve existing structure, update relevant sections
+# This will:
+# - Update PLAN.md, README.md, CLAUDE.md
+# - Check all project scripts for issues
+# - Validate script references
+# - Check dependencies
+# - Bump plugin version
+# - Generate sync report
 ```
 
 **Update principles:**

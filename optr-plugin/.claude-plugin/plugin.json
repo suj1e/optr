@@ -1,7 +1,7 @@
 {
   "name": "optr",
   "description": "Optimize PLAN.md and create teams to handle tasks - an automated project task runner",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "author": "sujie",
   "claude": {
     "minVersion": "1.0.0"
