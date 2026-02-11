@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -75,73 +75,62 @@ cat PLAN.md  # Read the plan content
 
 ### Step 2: Discover Relevant Tools
 
-Before optimizing, discover available professional tools that match the plan content using **both local scanning and online search**:
+Before optimizing, discover available professional tools from three sources:
 
-**Phase A: Local Tool Scanning**
+**Phase A: Project-local Tools**
 ```bash
-# Scan for all available skills
-find ~/.claude/plugins -name "SKILL.md" 2>/dev/null | head -30
-
-# Scan for available agents
-find ~/.claude/plugins -name "*-agent.md" 2>/dev/null | head -20
-
-# Scan for available commands
-find ~/.claude/plugins -name "*-command.md" 2>/dev/null | head -20
-```
-
-**Phase B: Online Tool Search**
-```bash
-# Use discover-tools.py which performs online searches
+# Scanned directories:
+# - .claude/skills/, skills/
+# - .claude/agents/, agents/
+# - .claude/commands/, commands/
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 ```
 
-**Online search process:**
-1. Extract keywords from PLAN.md content
-2. Build search queries (e.g., "Claude Code skill plugin best practices 2025")
-3. Execute WebSearch to find relevant tools and resources
-4. Parse results to extract tool names, descriptions, and purposes
-5. Score online resources by relevance (Claide mentions, action verbs, etc.)
-
-**Phase C: Merge Results**
-```python
-# discover-tools.py merges:
-# - Local tools (from ~/.claude/plugins) - higher priority
-# - Online resources (from web search) - supplementary
-# - Deduplicates by tool name
-# - Sorts by relevance score (local tools get +2 bonus)
+**Phase B: Global Local Tools**
+```bash
+# Scans ~/.claude/plugins for installed skills/agents/commands
+python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 ```
 
-**Match tools to PLAN.md content:**
+**Phase C: GitHub Search**
+```bash
+# Uses WebSearch to find Claude Code plugins from GitHub
+# Builds queries from PLAN.md keywords
+# Parses results to extract repo info and install commands
+python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+```
 
-Use the mapping table in `references/tool-mapping.md` to find relevant tools based on keywords in the plan:
+**Tool Sources Priority:**
+1. **Project-local** (score: 10) - Your project's own tools
+2. **Global local** (score: 5) - Installed in ~/.claude/plugins
+3. **GitHub** (score: 3-5) - Discoverable plugins with `claude plugin add <repo>`
+
+**Match tools to PLAN.md keywords:**
 
 | PLAN.md contains | Match to tool |
 |------------------|---------------|
-| "create skill", "write skill" | skill-development |
-| "build frontend", "design UI" | frontend-design |
-| "code review", "review PR" | code-review, pr-review-toolkit |
-| "update CLAUDE.md" | claude-md-improver |
-| "create agent", "write agent" | agent-development |
-| "create command" | command-development |
-| "create hook" | hook-development |
-| "MCP server" | mcp-integration |
+| "create skill" | skill-development (local/github) |
+| "build frontend" | frontend-design (local/github) |
+| "code review" | code-review (github: `claude plugin add ...`) |
+| "CLAUDE.md" | claude-md-improver (github) |
+| "create agent" | agent-development (local/github) |
+| "create command" | command-development (local/github) |
+| "hook" | hook-development (local/github) |
+| "MCP" | mcp-integration (local/github) |
 
 **For each matched tool:**
-1. Read the tool's SKILL.md or agent.md to understand its capabilities
+1. Read the tool's SKILL.md or documentation
 2. Extract relevant best practices and patterns
-3. Note any specific acceptance criteria or workflows recommended by the tool
+3. Note acceptance criteria or workflows
 
-**Example discovery workflow:**
+**Example workflow:**
 ```bash
-# PLAN.md contains: "创建一个用户认证 skill"
-# Extract keywords: ["创建", "skill"]
-# Match: skill-development skill
-
-# Read the skill-development skill
-cat ~/.claude/plugins/.../skill-development/SKILL.md
-
-# Extract best practices for skill creation
-# Use these to optimize the task in PLAN.md
+# PLAN.md: "创建用户认证 skill"
+# discover-tools.py:
+#   - Scans project .claude/skills/
+#   - Scans ~/.claude/plugins
+#   - Searches GitHub for "Claude Code skill plugin"
+# Output: List with install commands for matching tools
 ```
 
 ### Step 3: Optimize PLAN.md with Professional Guidance

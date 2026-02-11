@@ -35,7 +35,12 @@ Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 ```
-Scans `~/.claude/plugins` for available skills/agents/commands, **searches online** for relevant tools and best practices, and matches them to PLAN.md content. Outputs recommended tools with installation commands for user selection.
+Discovers Claude Code tools from three sources:
+1. **Project-local**: Scans `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
+2. **Global**: Scans `~/.claude/plugins` for installed skills/agents/commands
+3. **GitHub**: Uses WebSearch to find relevant plugins/skills/agents from GitHub
+
+Outputs recommended tools with install commands (e.g., `claude plugin add owner/repo`) for user selection.
 
 ### Plan Analysis
 ```bash
@@ -66,18 +71,19 @@ The skill follows Claude's progressive disclosure pattern to minimize context us
 
 The `discover-tools.py` script implements the matching logic:
 
-1. **Scan Local**: Find all SKILL.md, *-agent.md, *-command.md files in `~/.claude/plugins`
-2. **Search Online**: Use WebSearch to find relevant Claude tools and best practices based on PLAN.md keywords
-3. **Extract**: Parse YAML frontmatter for name/description, extract quoted trigger phrases
-4. **Merge**: Combine local and online tools, removing duplicates
-5. **Score**: Calculate relevance scores based on keyword overlap and source priority
-6. **Rank**: Sort by relevance score, local tools prioritized
-7. **Recommend**: Output top matches with installation commands for user selection
+1. **Scan Project-local**: Check `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
+2. **Scan Global**: Find all SKILL.md, *-agent.md, *-command.md files in `~/.claude/plugins`
+3. **Search GitHub**: Use WebSearch to find relevant plugins from GitHub based on PLAN.md keywords
+4. **Merge**: Combine all tools, removing duplicates by name
+5. **Score**: Calculate relevance (project: 10, local: 5, github: 3-5)
+6. **Rank**: Sort by score, priority: project > local > github
+7. **Recommend**: Output top matches with `claude plugin add <repo>` commands
 
 Example mappings:
-- `"create skill"` → `skill-development` (plugin-dev/skills/skill-development)
-- `"build frontend"` → `frontend-design` (frontend-design/skills/frontend-design)
-- `"code review"` → `code-review` (code-review/commands/code-review)
+- `"create skill"` → `skill-development` (local)
+- `"build frontend"` → `frontend-design` (local)
+- `"code review"` → `code-review` (github: `claude plugin add marketplaces/...`)
+- Custom project tools → Found in project directories
 
 ### SKILL.md Workflow
 
