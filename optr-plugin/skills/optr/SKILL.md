@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.3.0
+version: 0.4.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -450,5 +450,5 @@ User types `/optr`:
 ### Utility Scripts
 
 - **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
-- **`scripts/discover-tools.py`** - Scan and match tools to PLAN.md content
+- **`scripts/discover-tools.py`** - Scan local tools, search online for best practices, and match to PLAN.md content. Outputs recommended tools with installation commands for user selection
 - **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities
