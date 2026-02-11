@@ -6,13 +6,14 @@ Scans available skills/agents/commands and matches them to PLAN.md content.
 
 Usage:
     python scripts/discover-tools.py [path/to/PLAN.md]
+    python scripts/discover-tools.py --yes [path/to/PLAN.md]  # Skip GitHub prompt
 
 This script:
 1. Scans project-local directories (.claude/skills, skills/, etc.)
 2. Scans ~/.claude/plugins for global tools
-3. Searches GitHub for Claude Code plugins/skills/agents
-4. Matches PLAN.md content to relevant tools
-5. Outputs a list of matched tools with install commands
+3. Shows local matches, asks whether to search GitHub
+4. Searches GitHub for more tools if user confirms
+5. Outputs final list with install commands
 """
 
 import sys
@@ -333,40 +334,72 @@ def merge_and_score_tools(local_tools, online_tools, project_tools, plan_keyword
     return unique_tools
 
 
-def print_report(project_tools, local_tools, online_tools, matched_tools):
-    """Print discovery report."""
+def print_local_matches(project_tools, local_tools, matched_tools):
+    """Print matched local tools (project + global) and ask about GitHub search."""
     print("\n" + "=" * 60)
-    print("OPTR Tool Discovery Report")
+    print("🎯 Local Tools Matched to PLAN.md")
     print("=" * 60)
 
-    print(f"\n📊 Project-local Tools:")
-    print(f"  Skills: {len(project_tools.get('skills', []))}")
-    print(f"  Agents: {len(project_tools.get('agents', []))}")
-    print(f"  Commands: {len(project_tools.get('commands', []))}")
-
-    print(f"\n📦 Global Local Tools:")
-    print(f"  Skills: {len(local_tools.get('skills', []))}")
-    print(f"  Agents: {len(local_tools.get('agents', []))}")
-    print(f"  Commands: {len(local_tools.get('commands', []))}")
-
-    print(f"\n🌐 GitHub Tools: {len(online_tools)}")
+    # Show summary
+    print(f"\n📁 Project-local: {len(project_tools.get('skills', []))} skills, {len(project_tools.get('agents', []))} agents, {len(project_tools.get('commands', []))} commands")
+    print(f"📦 Global installed: {len(local_tools.get('skills', []))} skills, {len(local_tools.get('agents', []))} agents, {len(local_tools.get('commands', []))} commands")
 
     if matched_tools:
-        print(f"\n🎯 Recommended Tools:")
+        print(f"\n✅ Matching tools found:")
         print("-" * 60)
 
-        for i, tool in enumerate(matched_tools[:10], 1):
+        local_matches = [t for t in matched_tools if t.get('source') in ('project', 'local')]
+
+        for i, tool in enumerate(local_matches[:10], 1):
+            source = tool.get('source', 'unknown')
+            icon = '📁' if source == 'project' else '🏠'
+            print(f"\n  {i}. {icon} [{source.upper()}] {tool.get('name', 'unknown')}")
+            print(f"     {tool.get('description', 'N/A')[:70]}...")
+
+    print("\n" + "=" * 60)
+    print("\nOptions:")
+    print("  [y] Search GitHub for more tools")
+    print("  [n] Skip GitHub search, use local tools only")
+    print("  [q] Quit without changes")
+
+    choice = input("\n👉 Search GitHub for additional tools? [y/n/q]: ").strip().lower()
+
+    if choice == 'y':
+        return True
+    elif choice == 'q':
+        print("\n👋 Exiting without GitHub search.")
+        sys.exit(0)
+    else:
+        print("\n⏭️  Skipping GitHub search. Using local tools only.")
+        return False
+
+
+def print_final_report(matched_tools, searched_github=False):
+    """Print final report with all matched tools."""
+    print("\n" + "=" * 60)
+    print("🎯 Final Tool Discovery Results")
+    print("=" * 60)
+
+    if searched_github:
+        print("\n🌐 Including GitHub-sourced tools")
+    else:
+        print("\n📦 Using local tools only")
+
+    if matched_tools:
+        print(f"\nMatched tools ({len(matched_tools)} total):")
+        print("-" * 60)
+
+        for i, tool in enumerate(matched_tools[:15], 1):
             source = tool.get('source', 'unknown')
             icon = {'project': '📁', 'local': '🏠', 'github': '🌐'}.get(source, '🌐')
 
             print(f"\n  {i}. {icon} [{source.upper()}] {tool.get('name', 'unknown')}")
-            print(f"     {tool.get('description', 'N/A')[:70]}")
-            print(f"     Type: {tool.get('type', 'unknown')}")
+            print(f"     {tool.get('description', 'N/A')[:70]}...")
 
             if source == 'github':
                 print(f"     Install: {tool.get('install_cmd')}")
     else:
-        print("\n⚠️  No matches found.")
+        print("\n⚠️  No matching tools found.")
 
 
 def main():
@@ -374,6 +407,11 @@ def main():
         plan_path = Path.cwd() / 'PLAN.md'
     else:
         plan_path = Path(sys.argv[1])
+
+    # Check for --yes flag (skip GitHub search prompt)
+    auto_yes = '--yes' in sys.argv
+    if auto_yes:
+        sys.argv = [a for a in sys.argv if a != '--yes']
 
     if not plan_path.exists():
         print(f"Error: PLAN.md not found at {plan_path}")
@@ -388,13 +426,25 @@ def main():
     print("🔍 Scanning for global local tools...")
     local_tools = scan_tools()
 
-    print("🌐 Searching GitHub for tools...")
-    online_tools = search_github_for_tools(plan_keywords)
+    # Merge local tools only for initial matching
+    local_matched = merge_and_score_tools(local_tools, [], project_tools, plan_keywords)
 
-    print("📊 Merging and scoring tools...")
+    # Show local matches and ask about GitHub search
+    if auto_yes:
+        searched_github = True
+        print("\n🌐 Auto-searching GitHub (--yes flag)")
+    else:
+        searched_github = print_local_matches(project_tools, local_tools, local_matched)
+
+    online_tools = []
+    if searched_github:
+        print("\n🌐 Searching GitHub for tools...")
+        online_tools = search_github_for_tools(plan_keywords)
+
+    # Final merge of all tools
     matched_tools = merge_and_score_tools(local_tools, online_tools, project_tools, plan_keywords)
 
-    print_report(project_tools, local_tools, online_tools, matched_tools)
+    print_final_report(matched_tools, searched_github)
 
 
 if __name__ == '__main__':
