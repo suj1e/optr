@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.6.0
+version: 0.6.1
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -75,29 +75,33 @@ cat PLAN.md  # Read the plan content
 
 ### Step 2: Discover Relevant Tools
 
-Before optimizing, discover available professional tools from three sources:
+Execute discover-tools.py to find matching tools from three sources:
 
-**Phase A: Project-local Tools**
+**Run tool discovery:**
 ```bash
-# Scanned directories:
-# - .claude/skills/, skills/
-# - .claude/agents/, agents/
-# - .claude/commands/, commands/
-python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/discover-tools.py PLAN.md
 ```
 
-**Phase B: Global Local Tools**
-```bash
-# Scans ~/.claude/plugins for installed skills/agents/commands
-python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+**Output example:**
 ```
+============================================================
+🎯 Local Tools Matched to PLAN.md
+============================================================
+📁 Project-local: 0 skills, 0 agents, 0 commands
+📦 Global installed: 16 skills, 3 agents, 2 commands
 
-**Phase C: GitHub Search**
-```bash
-# Uses WebSearch to find Claude Code plugins from GitHub
-# Builds queries from PLAN.md keywords
-# Parses results to extract repo info and install commands
-python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+✅ Matching tools found:
+------------------------------------------------------------
+  1. 🏠 [LOCAL] skill-development
+     Description: This skill should be used when...
+
+============================================================
+Options:
+  [y] Search GitHub for more tools
+  [n] Skip GitHub search, use local tools only
+  [q] Quit without changes
+
+👉 Search GitHub for additional tools? [y/n/q]:
 ```
 
 **Tool Sources Priority:**
@@ -105,33 +109,10 @@ python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 2. **Global local** (score: 5) - Installed in ~/.claude/plugins
 3. **GitHub** (score: 3-5) - Discoverable plugins with `claude plugin add <repo>`
 
-**Match tools to PLAN.md keywords:**
-
-| PLAN.md contains | Match to tool |
-|------------------|---------------|
-| "create skill" | skill-development (local/github) |
-| "build frontend" | frontend-design (local/github) |
-| "code review" | code-review (github: `claude plugin add ...`) |
-| "CLAUDE.md" | claude-md-improver (github) |
-| "create agent" | agent-development (local/github) |
-| "create command" | command-development (local/github) |
-| "hook" | hook-development (local/github) |
-| "MCP" | mcp-integration (local/github) |
-
-**For each matched tool:**
-1. Read the tool's SKILL.md or documentation
-2. Extract relevant best practices and patterns
-3. Note acceptance criteria or workflows
-
-**Example workflow:**
-```bash
-# PLAN.md: "创建用户认证 skill"
-# discover-tools.py:
-#   - Scans project .claude/skills/
-#   - Scans ~/.claude/plugins
-#   - Searches GitHub for "Claude Code skill plugin"
-# Output: List with install commands for matching tools
-```
+**After execution:**
+1. Review the matched tools list
+2. If GitHub search was run, note install commands
+3. Proceed to Step 3 with tool knowledge
 
 ### Step 3: Optimize PLAN.md with Professional Guidance
 
