@@ -1,5 +1,5 @@
 ---
-name: OPTR - Optimizer & Team Runner
+name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
 version: 0.3.0
 ---

@@ -46,19 +46,14 @@ After task completion, automatically synchronizes all project documentation:
 
 ## Installation
 
-### Option 1: Install as Local Plugin (Recommended for Development)
-
+Run the installation script:
 ```bash
-# Link the plugin to your Claude plugins directory
-ln -s /Users/sujie/workspace/dev/apps/optr/optr-plugin ~/.claude/plugins/optr
+./install.sh
 ```
 
-### Option 2: Install to Existing Plugin
-
-Copy the skill directory to an existing plugin:
-
+Or manually copy the skill to Claude's skills directory:
 ```bash
-cp -r /Users/sujie/workspace/dev/apps/optr/optr-plugin/skills/optr ~/.claude/plugins/marketplaces/claude-plugins-official/plugins/plugin-dev/skills/optr
+cp -r optr-plugin/skills/optr ~/.claude/skills/optr
 ```
 
 ## Usage

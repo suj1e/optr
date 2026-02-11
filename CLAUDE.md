@@ -13,14 +13,14 @@ The core innovation is **intelligent tool matching**: OPTR scans available Claud
 
 ## Installation
 
-Link the plugin to Claude's plugins directory:
+Run the installation script:
 ```bash
-ln -s /Users/sujie/workspace/dev/apps/optr/optr-plugin ~/.claude/plugins/optr
+./install.sh
 ```
 
-Or copy the skill to an existing plugin:
+Or manually copy the skill to Claude's skills directory:
 ```bash
-cp -r optr-plugin/skills/optr ~/.claude/plugins/marketplaces/claude-plugins-official/plugins/plugin-dev/skills/optr
+cp -r optr-plugin/skills/optr ~/.claude/skills/optr
 ```
 
 ## Utility Scripts
