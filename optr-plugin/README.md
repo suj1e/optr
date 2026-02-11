@@ -10,6 +10,7 @@ OPTR is a Claude Code skill that:
 3. **Applies professional guidance** from matched tools to optimize tasks
 4. **Creates a team** to execute the defined tasks
 5. **Coordinates** task distribution among team members
+6. **Auto-syncs documentation** after task completion ✨
 
 ## Key Features
 
@@ -34,6 +35,14 @@ Uses matched tools' best practices to optimize your PLAN.md:
 ### 👥 Team Coordination
 
 Creates and manages teams with specialist teammates based on your project needs.
+
+### 📚 Auto-Documentation Sync ✨
+
+After task completion, automatically synchronizes all project documentation:
+- **PLAN.md**: Mark completed tasks, add timestamps
+- **README.md**: Update features and workflows
+- **CLAUDE.md**: Sync with current architecture
+- **plugin.json**: Bump version automatically
 
 ## Installation
 
@@ -79,6 +88,7 @@ When triggered, OPTR will:
 8. **Assign tasks** based on the optimized plan
 9. **Monitor progress** until completion
 10. **Clean up** team resources when done
+11. **Auto-sync documentation** ✨ - update all project docs and scripts
 
 ## Tool Matching Example
 
@@ -110,6 +120,7 @@ optr-plugin/
 │       │   ├── plan-template.md
 │       │   └── task-creation.py
 │       └── scripts/          # Utility scripts
+│           ├── sync-docs.py          # Documentation sync script ✨
 │           ├── discover-tools.py      # Tool discovery script
 │           └── optimize-plan.py      # Plan analysis script
 └── README.md
@@ -133,6 +144,18 @@ Your `PLAN.md` should contain actionable tasks:
 ```
 
 ## Utility Scripts
+
+### Documentation Sync ✨
+
+```bash
+python3 optr-plugin/skills/optr/scripts/sync-docs.py [project_directory]
+```
+
+Automatically synchronizes all project documentation after task completion:
+- Updates PLAN.md with completion status and timestamps
+- Refreshes README.md with new workflows and features
+- Syncs CLAUDE.md with current architecture
+- Bumps plugin version in plugin.json
 
 ### Tool Discovery
 

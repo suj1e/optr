@@ -1,7 +1,7 @@
 ---
 name: OPTR - Optimizer & Team Runner
-description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md and creates a team to handle the defined tasks.
-version: 0.1.0
+description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation upon completion.
+version: 0.2.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -229,17 +229,89 @@ After all tasks complete:
 1. Use SendMessage to request shutdown from each teammate
 2. Use TeamDelete to clean up team resources
 
+### Step 9: Auto-Update Project Documentation
+
+After team shutdown and task completion, automatically synchronize all project documentation:
+
+**Documents to update:**
+
+1. **PLAN.md** - Update task completion status:
+   - Mark completed tasks with `[x]`
+   - Update phase progress indicators
+   - Add notes about any changes or learnings
+
+2. **README.md** - Reflect current project state:
+   - Update installation instructions if changed
+   - Add new commands or workflows
+   - Update feature list based on completed work
+   - Refresh examples with current patterns
+
+3. **CLAUDE.md** - Sync with project architecture:
+   - Update command references (build, test, lint)
+   - Document new architectural patterns
+   - Add new utility scripts
+   - Update structure overview if codebase changed
+
+4. **Plugin files** (if this is a plugin project):
+   - Update `optr-plugin/skills/optr/SKILL.md` with new workflows
+   - Refresh `optr-plugin/README.md` with new capabilities
+   - Update version in `optr-plugin/.claude-plugin/plugin.json`
+
+**Update workflow:**
+
+```bash
+# Check which documents exist
+ls -la | grep -E "(PLAN|README|CLAUDE)\.md"
+
+# Update each document using Edit tool
+# Preserve existing structure, update relevant sections
+```
+
+**Update principles:**
+- Preserve existing content structure
+- Update only sections affected by completed tasks
+- Maintain consistent formatting and style
+- Add changelog entries for significant changes
+
+**Example updates:**
+
+For PLAN.md:
+```markdown
+## Phase 1: Skill Creation ✅
+- [x] Study skill-creator documentation and best practices
+- [x] Create optr-plugin with .claude-plugin/plugin.json
+- [x] Implement main SKILL.md with proper triggers
+```
+
+For CLAUDE.md:
+```markdown
+## Commands
+
+### Documentation Sync
+```bash
+python3 optr-plugin/skills/optr/scripts/sync-docs.py
+```
+Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
+```
+
+**Commit updated documentation:**
+```bash
+git add PLAN.md README.md CLAUDE.md optr-plugin/
+git commit -m "docs: update project documentation after task completion"
+```
+
 ## Best Practices
 
 - **Discover tools first** - scan for relevant skills/agents/commands before optimizing
 - **Check for PLAN.md first** - create template if missing, don't fail silently
-- **Always read PLAN.md first** before making optimizations
+- **Always read PLAN.md first** - before making optimizations
 - **Use professional guidance** - leverage matched tools for specialized tasks
 - **Preserve user intent** - optimize clarity, don't change goals
 - **Keep tasks focused** - break down large tasks into smaller ones
 - **Clear dependencies** - use blocks/blockedBy to prevent blocking
 - **Monitor progress** - check TaskList regularly
 - **Clean shutdown** - always terminate teammates and delete team
+- **Sync documentation** - auto-update all docs after task completion (Step 9)
 
 ## Handling Missing PLAN.md
 
@@ -289,6 +361,11 @@ User types `/optr`:
 6. Spawn teammates (including specialists if needed)
 7. Create and assign tasks from the plan
 8. Monitor execution until complete
+9. **Auto-update documentation:** ✨
+   - Mark completed tasks in PLAN.md
+   - Update README.md with new workflows
+   - Sync CLAUDE.md with current architecture
+   - Commit documentation changes
 
 ### Example PLAN.md optimization:
 
@@ -332,3 +409,9 @@ User types `/optr`:
 
 - **`examples/plan-template.md`** - Template for well-structured plans
 - **`examples/task-creation.sh`** - Example task parsing script
+
+### Utility Scripts
+
+- **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
+- **`scripts/discover-tools.py`** - Scan and match tools to PLAN.md content
+- **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities

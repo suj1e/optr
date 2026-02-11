@@ -25,6 +25,12 @@ cp -r optr-plugin/skills/optr ~/.claude/plugins/marketplaces/claude-plugins-offi
 
 ## Utility Scripts
 
+### Documentation Sync
+```bash
+python3 optr-plugin/skills/optr/scripts/sync-docs.py
+```
+Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
+
 ### Tool Discovery
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
