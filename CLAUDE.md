@@ -34,11 +34,16 @@ Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
 ### Tool Discovery
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search GitHub
 ```
 Discovers Claude Code tools from three sources:
 1. **Project-local**: Scans `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
 2. **Global**: Scans `~/.claude/plugins` for installed skills/agents/commands
-3. **GitHub**: Uses WebSearch to find relevant plugins/skills/agents from GitHub
+3. **GitHub**: Uses WebSearch to find relevant plugins (after user confirms)
+
+Two-phase workflow:
+1. Show local matches, ask about GitHub search
+2. If confirmed, search GitHub and show all matches
 
 Outputs recommended tools with install commands (e.g., `claude plugin add owner/repo`) for user selection.
 
@@ -87,13 +92,17 @@ Example mappings:
 
 ### SKILL.md Workflow
 
-The 8-step workflow in SKILL.md is designed for AI execution:
+The 11-step workflow in SKILL.md is designed for AI execution:
 
 - **Step 0**: Check for PLAN.md, create template if missing
 - **Step 1**: Read and analyze PLAN.md content
 - **Step 2**: Discover relevant tools (scan plugins, match keywords)
 - **Step 3**: Optimize with professional guidance (apply matched tools' best practices)
-- **Step 4-8**: Team creation, task generation, spawning, assignment, shutdown
+- **Step 4-7**: Team creation, task generation, spawning, assignment
+- **Step 8**: Monitor task execution
+- **Step 9**: Verify all tasks complete (BLOCKS Step 10)
+- **Step 10**: PLAN.md Clear Confirmation (ask user before clearing)
+- **Step 11**: Auto-sync documentation (README.md, CLAUDE.md, plugin files)
 
 Each step includes concrete bash commands and tool usage examples.
 
