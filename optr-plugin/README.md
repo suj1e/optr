@@ -1,0 +1,182 @@
+# OPTR - Optimizer & Team Runner
+
+Automate project plan optimization and task execution using Claude Code teams with intelligent tool matching.
+
+## What is OPTR?
+
+OPTR is a Claude Code skill that:
+1. **Reads and optimizes** your `PLAN.md` file
+2. **Discovers relevant tools** (skills/agents/commands) based on plan content
+3. **Applies professional guidance** from matched tools to optimize tasks
+4. **Creates a team** to execute the defined tasks
+5. **Coordinates** task distribution among team members
+
+## Key Features
+
+### 🧠 Intelligent Tool Matching
+
+OPTR automatically scans your available Claude plugins and matches PLAN.md content to relevant professional tools:
+
+- **Plugin Development**: skill-development, agent-development, command-development, hook-development
+- **Frontend Design**: frontend-design for UI/components
+- **Code Quality**: code-review, pr-review-toolkit
+- **Documentation**: claude-md-improver
+- **Feature Development**: feature-dev, code-architect
+
+### 📋 Smart Plan Optimization
+
+Uses matched tools' best practices to optimize your PLAN.md:
+- Progressive disclosure structure
+- Third-person descriptions with triggers
+- Professional acceptance criteria
+- Specialist role suggestions
+
+### 👥 Team Coordination
+
+Creates and manages teams with specialist teammates based on your project needs.
+
+## Installation
+
+### Option 1: Install as Local Plugin (Recommended for Development)
+
+```bash
+# Link the plugin to your Claude plugins directory
+ln -s /Users/sujie/workspace/dev/apps/optr/optr-plugin ~/.claude/plugins/optr
+```
+
+### Option 2: Install to Existing Plugin
+
+Copy the skill directory to an existing plugin:
+
+```bash
+cp -r /Users/sujie/workspace/dev/apps/optr/optr-plugin/skills/optr ~/.claude/plugins/marketplaces/claude-plugins-official/plugins/plugin-dev/skills/optr
+```
+
+## Usage
+
+Once installed, simply type in Claude CLI:
+
+```
+/optr
+```
+
+Or use any of these triggers:
+- "run optr"
+- "optimize PLAN.md and create team"
+- "automate my plan"
+
+## What OPTR Does
+
+When triggered, OPTR will:
+
+1. **Check for PLAN.md** - create template if missing
+2. **Read and analyze** the plan content
+3. **Discover relevant tools** by scanning available plugins
+4. **Match tools to tasks** using keyword analysis
+5. **Optimize with professional guidance** using matched tools
+6. **Create a team** to handle the tasks
+7. **Spawn teammates** including specialists if needed
+8. **Assign tasks** based on the optimized plan
+9. **Monitor progress** until completion
+10. **Clean up** team resources when done
+
+## Tool Matching Example
+
+Given a PLAN.md containing:
+```markdown
+- 创建一个用户认证 skill
+- 构建登录界面
+```
+
+OPTR will:
+1. Match "创建 skill" → **skill-development** skill
+2. Match "登录界面" → **frontend-design** skill
+3. Apply best practices from each tool to optimize tasks
+
+## Plugin Structure
+
+```
+optr-plugin/
+├── .claude-plugin/
+│   └── plugin.json           # Plugin metadata
+├── skills/
+│   └── optr/
+│       ├── SKILL.md          # Main skill definition
+│       ├── references/       # Detailed documentation
+│       │   ├── tool-mapping.md       # Tool keyword mappings
+│       │   ├── team-workflow.md      # Team coordination patterns
+│       │   └── plan-optimization.md  # PLAN.md optimization guidelines
+│       ├── examples/         # Example files
+│       │   ├── plan-template.md
+│       │   └── task-creation.py
+│       └── scripts/          # Utility scripts
+│           ├── discover-tools.py      # Tool discovery script
+│           └── optimize-plan.py      # Plan analysis script
+└── README.md
+```
+
+## PLAN.md Format
+
+Your `PLAN.md` should contain actionable tasks:
+
+```markdown
+# Project: My Project
+
+## Phase 1: Setup
+- Initialize project structure
+- Configure development environment
+
+## Phase 2: Features
+- Implement user authentication
+- Build dashboard UI
+- Add data export functionality
+```
+
+## Utility Scripts
+
+### Tool Discovery
+
+```bash
+python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+```
+
+Scans available tools and matches them to your PLAN.md content:
+- Shows available skills/agents/commands
+- Calculates relevance scores
+- Outputs matched tools with keywords
+
+### Plan Analysis
+
+```bash
+python3 optr-plugin/skills/optr/scripts/optimize-plan.py [path/to/PLAN.md]
+```
+
+Analyzes your plan and suggests improvements without creating a team.
+
+## Tool Mapping
+
+OPTR uses intelligent keyword matching to find relevant tools:
+
+| PLAN.md Content | Matched Tool |
+|-----------------|--------------|
+| "create skill" | skill-development |
+| "build frontend" | frontend-design |
+| "code review" | code-review |
+| "CLAUDE.md" | claude-md-improver |
+| "create agent" | agent-development |
+| "create hook" | hook-development |
+
+See `references/tool-mapping.md` for complete mapping table.
+
+## Requirements
+
+- Claude Code CLI
+- A `PLAN.md` file in your project directory (auto-created if missing)
+
+## License
+
+MIT
+
+---
+
+Created with [skill-creator](https://code.claude.com/docs/en/skills)
