@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.6.1
+version: 0.6.2
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -75,12 +75,19 @@ cat PLAN.md  # Read the plan content
 
 ### Step 2: Discover Relevant Tools
 
-Execute discover-tools.py to find matching tools from three sources:
+**CRITICAL: Execute tool discovery script first!**
 
-**Run tool discovery:**
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py PLAN.md
 ```
+
+**This script will:**
+1. Scan project-local tools (.claude/skills/, skills/ 等)
+2. Scan global tools (~/.claude/plugins)
+3. Show local matches, ask about GitHub search
+4. Display matched tools with install commands
+
+**YOU MUST run this command before proceeding.** The script output tells you which tools are available for optimizing PLAN.md.
 
 **Output example:**
 ```
@@ -116,39 +123,27 @@ Options:
 
 ### Step 3: Optimize PLAN.md with Professional Guidance
 
-Now optimize the plan using insights from discovered tools:
+**CRITICAL: Run optimize-plan.py first!**
 
-**Optimization process:**
+```bash
+python3 optr-plugin/skills/optr/scripts/optimize-plan.py PLAN.md
+```
+
+**Then apply insights from matched tools:**
 1. **Break down vague goals** into specific, actionable tasks
 2. **Add context and acceptance criteria** using best practices from matched tools
 3. **Identify dependencies** between tasks
 4. **Suggest specialist roles** based on available agents
 
-**For each task, apply professional guidance:**
+**Apply tool-specific best practices:**
 
-If the task matches `skill-development`:
-- Reference skill-creator patterns
-- Add progressive disclosure structure
-- Include third-person description with triggers
+| Task type | Apply this guidance |
+|-----------|-------------------|
+| skill creation | skill-development patterns |
+| frontend UI | frontend-design principles |
+| code review | code-review checklist |
 
-If the task matches `frontend-design`:
-- Reference design thinking principles
-- Add aesthetic direction requirements
-- Include production-grade criteria
-
-If the task matches `code-review`:
-- Add review checklist items
-- Include quality gate criteria
-- Reference testing requirements
-
-**Create optimized PLAN.md with:**
-- Clear task descriptions with imperative language
-- Dependencies (blocks/blockedBy)
-- Acceptance criteria from professional tools
-- Suggested task owners or specialist roles
-- References to relevant skills/agents
-
-Update PLAN.md using the Edit tool with the optimized content.
+**Finally, update PLAN.md using Edit tool.**
 
 ### Step 4: Create a Team
 
@@ -216,136 +211,58 @@ Task(
 - Skill creation → Assign to teammate with skill-development knowledge
 - Code review → Assign to teammate with code-review expertise
 
-### Step 8: Shutdown Team
+### Step 8: Monitor Task Execution
 
-After all tasks complete:
-1. Use SendMessage to request shutdown from each teammate
-2. Use TeamDelete to clean up team resources
-
-### Step 9: PLAN.md Completion Check
-
-Verify all tasks are completed before proceeding:
-
-1. **Check task status:**
+1. **Check progress:**
 ```bash
 TaskList
 ```
 
-2. **Verify all tasks complete:**
-   - If any tasks remain incomplete: Inform user, do NOT clear PLAN.md
-   - If all tasks complete: Proceed to Step 9 (documentation sync)
+2. **If incomplete:** Wait or assist teammates
+3. **If blocked:** Help resolve dependencies
 
-3. **Only when all tasks complete:** Continue to documentation sync
+### Step 9: PLAN.md Completion Check
+
+**Verify ALL tasks complete:**
+
+```bash
+TaskList
+```
+
+**Rule:** If ANY task is incomplete → STOP, inform user, do NOT clear PLAN.md.
 
 ### Step 10: PLAN.md Clear Confirmation
 
-After ALL tasks are complete and documentation is synced, ask user about PLAN.md:
+**Only execute after Step 9 confirms ALL tasks complete:**
 
-**Ask the user:**
+**Ask user:**
 ```
 ✅ All tasks completed!
 
 Options:
-  [y] Clear PLAN.md (reset to template for next use)
-  [n] Keep PLAN.md with completion status
-  [q] Quit, PLAN.md unchanged
+  [y] Clear PLAN.md (reset to template)
+  [n] Keep PLAN.md as-is
+  [q] Quit without changes
 
 👉 Clear PLAN.md? [y/n/q]:
 ```
 
-**Process user choice:**
-- If `y`: Reset PLAN.md to template (keep header only)
-- If `n`: Keep PLAN.md as-is (with completed tasks marked)
-- If `q`: Exit without changes
+**Process choice:**
+- `y`: Edit PLAN.md to reset template
+- `n`: Keep current PLAN.md
+- `q`: Exit
 
-**Example clearing:**
-```bash
-# Reset PLAN.md to template
-cat > PLAN.md << 'EOF'
-# PLAN
+### Step 11: Auto-Update Documentation (Optional)
 
-_Start: YYYY-MM-DD_
-EOF
-```
-
-### Step 11: Auto-Update Project Documentation & Scripts
-
-After team shutdown and task completion, automatically synchronize all project documentation and scripts:
-
-**Documents to update:**
-
-1. **README.md** - Reflect current project state:
-   - Update installation instructions if changed
-   - Add new commands or workflows
-   - Update feature list based on completed work
-   - Refresh examples with current patterns
-
-2. **CLAUDE.md** - Sync with project architecture:
-   - Update command references (build, test, lint)
-   - Document new architectural patterns
-   - Add new utility scripts
-   - Update structure overview if codebase changed
-
-3. **Plugin files** (if this is a plugin project):
-   - Update `optr-plugin/skills/optr/SKILL.md` with new workflows
-   - Refresh `optr-plugin/README.md` with new capabilities
-   - Update version in `optr-plugin/.claude-plugin/plugin.json`
-
-**Scripts to check and update:**
-
-1. **Shebang check** - Ensure executable scripts have `#!/usr/bin/env python3`
-2. **Reference validation** - Check for broken paths or missing imports
-3. **Version sync** - Ensure version numbers are consistent across scripts
-4. **TODO/FIXME tracking** - Report any pending items
-5. **Code quality** - Check for print statements vs logging
-6. **Docstring verification** - Ensure scripts have module docstrings
-
-**Use sync-docs.py script:**
-
-```bash
-# Run automatic sync
-python3 optr-plugin/skills/optr/scripts/sync-docs.py
-
-# This will:
-# - Update PLAN.md, README.md, CLAUDE.md
-# - Check all project scripts for issues
-# - Validate script references
-# - Check dependencies
-# - Bump plugin version
-# - Generate sync report
-```
-
-**Update principles:**
-- Preserve existing content structure
-- Update only sections affected by completed tasks
-- Maintain consistent formatting and style
-- Add changelog entries for significant changes
-
-**Example updates:**
-
-For PLAN.md:
-```markdown
-## Phase 1: Skill Creation ✅
-- [x] Study skill-creator documentation and best practices
-- [x] Create optr-plugin with .claude-plugin/plugin.json
-- [x] Implement main SKILL.md with proper triggers
-```
-
-For CLAUDE.md:
-```markdown
-## Commands
-
-### Documentation Sync
+**Run sync-docs.py:**
 ```bash
 python3 optr-plugin/skills/optr/scripts/sync-docs.py
 ```
-Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
-```
 
-**Commit updated documentation:**
+**Then commit changes:**
 ```bash
 git add PLAN.md README.md CLAUDE.md optr-plugin/
-git commit -m "docs: update project documentation after task completion"
+git commit -m "docs: update documentation"
 ```
 
 ## Best Practices
