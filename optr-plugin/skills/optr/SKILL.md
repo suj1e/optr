@@ -75,8 +75,9 @@ cat PLAN.md  # Read the plan content
 
 ### Step 2: Discover Relevant Tools
 
-Before optimizing, discover available professional tools that match the plan content:
+Before optimizing, discover available professional tools that match the plan content using **both local scanning and online search**:
 
+**Phase A: Local Tool Scanning**
 ```bash
 # Scan for all available skills
 find ~/.claude/plugins -name "SKILL.md" 2>/dev/null | head -30
@@ -86,6 +87,28 @@ find ~/.claude/plugins -name "*-agent.md" 2>/dev/null | head -20
 
 # Scan for available commands
 find ~/.claude/plugins -name "*-command.md" 2>/dev/null | head -20
+```
+
+**Phase B: Online Tool Search**
+```bash
+# Use discover-tools.py which performs online searches
+python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+```
+
+**Online search process:**
+1. Extract keywords from PLAN.md content
+2. Build search queries (e.g., "Claude Code skill plugin best practices 2025")
+3. Execute WebSearch to find relevant tools and resources
+4. Parse results to extract tool names, descriptions, and purposes
+5. Score online resources by relevance (Claide mentions, action verbs, etc.)
+
+**Phase C: Merge Results**
+```python
+# discover-tools.py merges:
+# - Local tools (from ~/.claude/plugins) - higher priority
+# - Online resources (from web search) - supplementary
+# - Deduplicates by tool name
+# - Sorts by relevance score (local tools get +2 bonus)
 ```
 
 **Match tools to PLAN.md content:**

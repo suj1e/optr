@@ -35,7 +35,7 @@ Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 ```
-Scans `~/.claude/plugins` for available skills/agents/commands, extracts keywords from their descriptions, and matches them to PLAN.md content with relevance scores.
+Scans `~/.claude/plugins` for available skills/agents/commands, **searches online** for relevant tools and best practices, and matches them to PLAN.md content. Outputs recommended tools with installation commands for user selection.
 
 ### Plan Analysis
 ```bash
@@ -66,10 +66,13 @@ The skill follows Claude's progressive disclosure pattern to minimize context us
 
 The `discover-tools.py` script implements the matching logic:
 
-1. **Scan**: Find all SKILL.md, *-agent.md, *-command.md files in `~/.claude/plugins`
-2. **Extract**: Parse YAML frontmatter for name/description, extract quoted trigger phrases
-3. **Match**: Score tools by keyword overlap with PLAN.md content
-4. **Rank**: Sort by relevance score, return top matches
+1. **Scan Local**: Find all SKILL.md, *-agent.md, *-command.md files in `~/.claude/plugins`
+2. **Search Online**: Use WebSearch to find relevant Claude tools and best practices based on PLAN.md keywords
+3. **Extract**: Parse YAML frontmatter for name/description, extract quoted trigger phrases
+4. **Merge**: Combine local and online tools, removing duplicates
+5. **Score**: Calculate relevance scores based on keyword overlap and source priority
+6. **Rank**: Sort by relevance score, local tools prioritized
+7. **Recommend**: Output top matches with installation commands for user selection
 
 Example mappings:
 - `"create skill"` → `skill-development` (plugin-dev/skills/skill-development)
