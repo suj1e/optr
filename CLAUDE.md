@@ -119,7 +119,7 @@ description: This skill should be used when the user asks to "run optr", "optimi
 
 After installing the plugin, test with:
 ```bash
-cd /Users/sujie/workspace/dev/apps/optr
+cd /path/to/optr
 claude
 # In Claude CLI, type: /optr
 ```

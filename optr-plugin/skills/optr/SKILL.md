@@ -362,7 +362,7 @@ Please edit PLAN.md to add your specific tasks, then run /optr again.
 
 User types `/optr`:
 
-1. Read `/Users/sujie/workspace/dev/apps/optr/PLAN.md`
+1. Read `PLAN.md`
 2. **Discover relevant tools:**
    - Scan for available skills/agents/commands
    - Match "创建 skill" → skill-development
