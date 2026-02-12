@@ -117,7 +117,7 @@ optr-plugin/
 │       └── scripts/          # Utility scripts
 │           ├── sync-docs.py          # Documentation sync script ✨
 │           ├── discover-tools.py      # Tool discovery script
-│           ├── match-plugins.py      # AI semantic plugin matching
+│           ├── match_plugins.py      # AI semantic plugin matching
 │           └── optimize-plan.py      # Plan analysis script
 └── README.md
 ```
@@ -169,7 +169,7 @@ Two-phase tool discovery with AI semantic matching from marketplace:
 ### Marketplace Plugin Matching
 
 ```bash
-python3 optr-plugin/skills/optr/scripts/match-plugins.py [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/match_plugins.py [path/to/PLAN.md]
 ```
 
 Uses AI semantic analysis to match PLAN.md content with marketplace plugins:

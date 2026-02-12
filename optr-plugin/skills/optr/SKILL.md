@@ -578,7 +578,7 @@ User types `/optr`:
   - Phase 1: Show local matches, ask about marketplace
   - Phase 2: AI semantic matching from marketplace plugins
   - Options: `--verbose` (detailed scan info), `--yes` (auto-search marketplace)
-- **`scripts/match-plugins.py`** - AI semantic plugin matching:
+- **`scripts/match_plugins.py`** - AI semantic plugin matching:
   - Queries `claude plugin list --available --json` for marketplace plugins
   - Uses Claude API to match PLAN.md content with plugin descriptions
   - Returns plugins with relevance score >= 0.7

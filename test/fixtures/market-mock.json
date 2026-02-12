@@ -1,0 +1,29 @@
+{
+  "installed": [],
+  "available": [
+    {
+      "pluginId": "code-review@claude-plugins-official",
+      "name": "code-review",
+      "description": "Automated code review for pull requests with quality checks",
+      "marketplaceName": "claude-plugins-official",
+      "version": "1.0.0",
+      "installCount": 15000
+    },
+    {
+      "pluginId": "frontend-design@claude-plugins-official",
+      "name": "frontend-design",
+      "description": "Production-grade frontend design with modern UI/UX principles",
+      "marketplaceName": "claude-plugins-official",
+      "version": "1.0.0",
+      "installCount": 25000
+    },
+    {
+      "pluginId": "test-runner@claude-plugins-official",
+      "name": "test-runner",
+      "description": "Automated test execution and reporting for CI/CD",
+      "marketplaceName": "claude-plugins-official",
+      "version": "1.0.0",
+      "installCount": 18000
+    }
+  ]
+}
