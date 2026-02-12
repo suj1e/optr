@@ -337,7 +337,7 @@ def merge_and_score_tools(local_tools, online_tools, project_tools, plan_keyword
 def print_local_matches(project_tools, local_tools, matched_tools):
     """Print matched local tools (project + global) and ask about GitHub search."""
     print("\n" + "=" * 60)
-    print("🎯 Local Tools Matched to PLAN.md")
+    print("🎯 Tool Discovery - Phase 1: Local Tools")
     print("=" * 60)
 
     # Show summary
@@ -345,7 +345,7 @@ def print_local_matches(project_tools, local_tools, matched_tools):
     print(f"📦 Global installed: {len(local_tools.get('skills', []))} skills, {len(local_tools.get('agents', []))} agents, {len(local_tools.get('commands', []))} commands")
 
     if matched_tools:
-        print(f"\n✅ Matching tools found:")
+        print(f"\n✅ Local tools matched to your PLAN.md:")
         print("-" * 60)
 
         local_matches = [t for t in matched_tools if t.get('source') in ('project', 'local')]
@@ -354,12 +354,18 @@ def print_local_matches(project_tools, local_tools, matched_tools):
             source = tool.get('source', 'unknown')
             icon = '📁' if source == 'project' else '🏠'
             print(f"\n  {i}. {icon} [{source.upper()}] {tool.get('name', 'unknown')}")
-            print(f"     {tool.get('description', 'N/A')[:70]}...")
+            desc = tool.get('description', 'N/A')
+            if len(desc) > 70:
+                desc = desc[:67] + "..."
+            print(f"     {desc}")
+    else:
+        print("\n⚠️  No local tools matched to your PLAN.md content.")
+        print("💡 Consider searching GitHub for relevant tools.")
 
     print("\n" + "=" * 60)
     print("\nOptions:")
-    print("  [y] Search GitHub for more tools")
-    print("  [n] Skip GitHub search, use local tools only")
+    print("  [y] Search GitHub for more tools → See installable plugins")
+    print("  [n] Skip GitHub search → Use local tools only")
     print("  [q] Quit without changes")
 
     choice = input("\n👉 Search GitHub for additional tools? [y/n/q]: ").strip().lower()
@@ -385,21 +391,53 @@ def print_final_report(matched_tools, searched_github=False):
     else:
         print("\n📦 Using local tools only")
 
-    if matched_tools:
-        print(f"\nMatched tools ({len(matched_tools)} total):")
-        print("-" * 60)
-
-        for i, tool in enumerate(matched_tools[:15], 1):
-            source = tool.get('source', 'unknown')
-            icon = {'project': '📁', 'local': '🏠', 'github': '🌐'}.get(source, '🌐')
-
-            print(f"\n  {i}. {icon} [{source.upper()}] {tool.get('name', 'unknown')}")
-            print(f"     {tool.get('description', 'N/A')[:70]}...")
-
-            if source == 'github':
-                print(f"     Install: {tool.get('install_cmd')}")
-    else:
+    if not matched_tools:
         print("\n⚠️  No matching tools found.")
+        return
+
+    # Separate tools by source
+    project_tools = [t for t in matched_tools if t.get('source') == 'project']
+    local_tools = [t for t in matched_tools if t.get('source') == 'local']
+    github_tools = [t for t in matched_tools if t.get('source') == 'github']
+
+    # Section 1: Available Local Tools
+    if project_tools or local_tools:
+        print(f"\n" + "=" * 60)
+        print("✅ Available Local Tools (Ready to Use)")
+        print("=" * 60)
+
+        for i, tool in enumerate(project_tools + local_tools, 1):
+            source = tool.get('source', 'unknown')
+            icon = '📁' if source == 'project' else '🏠'
+            print(f"\n  {i}. {icon} [{source.upper()}] {tool.get('name', 'unknown')}")
+            desc = tool.get('description', 'N/A')
+            if len(desc) > 70:
+                desc = desc[:67] + "..."
+            print(f"     {desc}")
+
+    # Section 2: Installable GitHub Tools
+    if github_tools:
+        print(f"\n" + "=" * 60)
+        print("🌐 Installable GitHub Tools")
+        print("=" * 60)
+        print("\n💡 Run these commands to install additional tools:\n")
+
+        for i, tool in enumerate(github_tools, 1):
+            print(f"  {i}. {tool.get('name', 'unknown')}")
+            desc = tool.get('description', 'N/A')
+            if len(desc) > 70:
+                desc = desc[:67] + "..."
+            print(f"     {desc}")
+            print(f"     Install: {tool.get('install_cmd')}")
+
+    # Section 3: Summary
+    print(f"\n" + "=" * 60)
+    print("📊 Summary")
+    print("=" * 60)
+    print(f"  📁 Project-local tools: {len(project_tools)}")
+    print(f"  🏠 Global installed: {len(local_tools)}")
+    print(f"  🌐 GitHub available: {len(github_tools)}")
+    print(f"  📦 Total matched: {len(matched_tools)}")
 
 
 def main():
@@ -444,7 +482,23 @@ def main():
     # Final merge of all tools
     matched_tools = merge_and_score_tools(local_tools, online_tools, project_tools, plan_keywords)
 
+    # Print phase 2 results
+    print("\n" + "=" * 60)
+    print("🎯 Tool Discovery - Phase 2: Complete Results")
+    print("=" * 60)
+
     print_final_report(matched_tools, searched_github)
+
+    # Final recommendations
+    github_tools = [t for t in matched_tools if t.get('source') == 'github']
+    if github_tools:
+        print(f"\n" + "=" * 60)
+        print("💡 Recommended Installation Commands")
+        print("=" * 60)
+        print("\nCopy and paste these commands to install additional tools:\n")
+        for tool in github_tools:
+            print(f"  {tool.get('install_cmd')}")
+        print()
 
 
 if __name__ == '__main__':

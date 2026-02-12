@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.6.2
+version: 0.7.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -73,7 +73,7 @@ pwd  # Confirm working directory
 cat PLAN.md  # Read the plan content
 ```
 
-### Step 2: Discover Relevant Tools
+### Step 2: Discover Relevant Tools (Two-Phase Workflow)
 
 **CRITICAL: Execute tool discovery script first!**
 
@@ -81,34 +81,86 @@ cat PLAN.md  # Read the plan content
 python3 optr-plugin/skills/optr/scripts/discover-tools.py PLAN.md
 ```
 
-**This script will:**
-1. Scan project-local tools (.claude/skills/, skills/ 等)
-2. Scan global tools (~/.claude/plugins)
-3. Show local matches, ask about GitHub search
-4. Display matched tools with install commands
+**This script uses a TWO-PHASE workflow:**
 
-**YOU MUST run this command before proceeding.** The script output tells you which tools are available for optimizing PLAN.md.
+#### Phase 1: Local Discovery + GitHub Confirmation
 
-**Output example:**
 ```
 ============================================================
-🎯 Local Tools Matched to PLAN.md
+🎯 Tool Discovery - Phase 1: Local Tools
 ============================================================
+
 📁 Project-local: 0 skills, 0 agents, 0 commands
 📦 Global installed: 16 skills, 3 agents, 2 commands
 
-✅ Matching tools found:
+✅ Local tools matched to your PLAN.md:
 ------------------------------------------------------------
+
   1. 🏠 [LOCAL] skill-development
-     Description: This skill should be used when...
+     This skill should be used when the user wants to "create a skill"
+
+  2. 🏠 [LOCAL] frontend-design
+     Create distinctive, production-grade frontend interfaces...
 
 ============================================================
+
 Options:
-  [y] Search GitHub for more tools
-  [n] Skip GitHub search, use local tools only
+  [y] Search GitHub for more tools → See installable plugins
+  [n] Skip GitHub search → Use local tools only
   [q] Quit without changes
 
 👉 Search GitHub for additional tools? [y/n/q]:
+```
+
+#### Phase 2: GitHub Search + Install Suggestions (if user confirms)
+
+```
+🌐 Searching GitHub for tools...
+
+============================================================
+🎯 Tool Discovery - Phase 2: Complete Results
+============================================================
+
+============================================================
+✅ Available Local Tools (Ready to Use)
+============================================================
+
+  1. 🏠 [LOCAL] skill-development
+     This skill should be used when the user wants to "create a skill"
+
+  2. 🏠 [LOCAL] frontend-design
+     Create distinctive, production-grade frontend interfaces
+
+============================================================
+🌐 Installable GitHub Tools
+============================================================
+
+💡 Run these commands to install additional tools:
+
+  1. code-reviewer
+     Review pull requests and provide feedback
+     Install: claude plugin add marketplaces/code-reviewer
+
+  2. test-runner
+     Automated test execution and reporting
+     Install: claude plugin add test-org/test-runner
+
+============================================================
+📊 Summary
+============================================================
+  📁 Project-local tools: 0
+  🏠 Global installed: 2
+  🌐 GitHub available: 2
+  📦 Total matched: 4
+
+============================================================
+💡 Recommended Installation Commands
+============================================================
+
+Copy and paste these commands to install additional tools:
+
+  claude plugin add marketplaces/code-reviewer
+  claude plugin add test-org/test-runner
 ```
 
 **Tool Sources Priority:**
@@ -116,10 +168,7 @@ Options:
 2. **Global local** (score: 5) - Installed in ~/.claude/plugins
 3. **GitHub** (score: 3-5) - Discoverable plugins with `claude plugin add <repo>`
 
-**After execution:**
-1. Review the matched tools list
-2. If GitHub search was run, note install commands
-3. Proceed to Step 3 with tool knowledge
+**YOU MUST run this command before proceeding to Step 3.** The script output tells you which tools are available for optimizing PLAN.md.
 
 ### Step 3: Optimize PLAN.md with Professional Guidance
 
@@ -380,5 +429,5 @@ User types `/optr`:
 ### Utility Scripts
 
 - **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
-- **`scripts/discover-tools.py`** - Scan local tools, search online for best practices, and match to PLAN.md content. Outputs recommended tools with installation commands for user selection
+- **`scripts/discover-tools.py`** - Two-phase tool discovery: (1) Show local matches, ask about GitHub, (2) Search GitHub and show installable plugins with clear installation commands
 - **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities

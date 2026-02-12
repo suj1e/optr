@@ -5,9 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 OPTR (Optimizer & Team Runner) is a Claude Code skill plugin that automates project plan optimization and task execution. When a user types `/optr`, it:
-1. Reads and optimizes `PLAN.md` using professional tool matching
-2. Creates a team to execute the defined tasks
-3. Coordinates task distribution among team members
+1. Checks for PLAN.md, creates template if missing
+2. Reads and analyzes PLAN.md content
+3. Discovers relevant tools using a two-phase workflow:
+   - **Phase 1**: Scan local tools, show matches, ask about GitHub search
+   - **Phase 2**: If confirmed, search GitHub and show installable plugins
+4. Optimizes PLAN.md with professional tool guidance
+5. Creates a team to execute the defined tasks
+6. Coordinates task distribution among team members
+7. Syncs documentation upon completion
 
 The core innovation is **intelligent tool matching**: OPTR scans available Claude plugins (skills/agents/commands) and matches PLAN.md content to relevant professional tools, then applies their best practices to optimize tasks.
 
@@ -36,16 +42,23 @@ Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search GitHub
 ```
-Discovers Claude Code tools from three sources:
+Two-phase workflow that discovers Claude Code tools from three sources:
 1. **Project-local**: Scans `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
 2. **Global**: Scans `~/.claude/plugins` for installed skills/agents/commands
 3. **GitHub**: Uses WebSearch to find relevant plugins (after user confirms)
 
-Two-phase workflow:
-1. Show local matches, ask about GitHub search
-2. If confirmed, search GitHub and show all matches
+**Phase 1 Output:**
+- Shows local matched tools (project + global installed)
+- Displays count of tools found in each category
+- Prompts user for GitHub search decision
 
-Outputs recommended tools with install commands (e.g., `claude plugin add owner/repo`) for user selection.
+**Phase 2 Output (if GitHub search confirmed):**
+- Shows complete results with local and GitHub tools separated
+- Lists installable GitHub tools with `claude plugin add` commands
+- Provides summary of tool counts
+- Shows recommended installation commands at the end
+
+**Tool Priority:** project (score: 10) > global installed (score: 5) > GitHub (score: 3-5)
 
 ### Plan Analysis
 ```bash
@@ -61,7 +74,7 @@ The skill follows Claude's progressive disclosure pattern to minimize context us
 
 1. **Metadata** (always loaded): SKILL.md frontmatter with `name` and `description` containing trigger phrases like "run optr", "optimize PLAN.md", "automate task execution"
 
-2. **SKILL.md body** (~2000 words): Core workflow - 8 steps from checking PLAN.md to team shutdown. Includes tool mapping table for keyword matching.
+2. **SKILL.md body** (~2000 words): Core workflow - 11 steps from checking PLAN.md to team shutdown. Includes tool mapping table for keyword matching.
 
 3. **References/** (loaded as needed):
    - `tool-mapping.md` - Complete keyword → skill/agent/command mappings
@@ -74,15 +87,21 @@ The skill follows Claude's progressive disclosure pattern to minimize context us
 
 ### Tool Matching Algorithm
 
-The `discover-tools.py` script implements the matching logic:
+The `discover-tools.py` script implements the two-phase matching logic:
 
+**Phase 1: Local Discovery**
 1. **Scan Project-local**: Check `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
 2. **Scan Global**: Find all SKILL.md, *-agent.md, *-command.md files in `~/.claude/plugins`
-3. **Search GitHub**: Use WebSearch to find relevant plugins from GitHub based on PLAN.md keywords
-4. **Merge**: Combine all tools, removing duplicates by name
-5. **Score**: Calculate relevance (project: 10, local: 5, github: 3-5)
-6. **Rank**: Sort by score, priority: project > local > github
-7. **Recommend**: Output top matches with `claude plugin add <repo>` commands
+3. **Display Local Matches**: Show matched local tools with source indicators (📁 project, 🏠 global)
+4. **Prompt User**: Ask whether to search GitHub for additional tools
+
+**Phase 2: GitHub Search (if confirmed)**
+5. **Search GitHub**: Use WebSearch to find relevant plugins from GitHub based on PLAN.md keywords
+6. **Merge and Deduplicate**: Combine all tools, removing duplicates by name
+7. **Score**: Calculate relevance (project: 10, local: 5, github: 3-5)
+8. **Rank**: Sort by score, priority: project > local > github
+9. **Display Complete Results**: Separate local tools from installable GitHub tools
+10. **Recommend Install Commands**: Show `claude plugin add <repo>` commands for GitHub tools
 
 Example mappings:
 - `"create skill"` → `skill-development` (local)
