@@ -13,7 +13,8 @@ OPTR (Optimizer & Team Runner) is a Claude Code skill plugin that automates proj
 4. Optimizes PLAN.md with professional tool guidance
 5. Creates a team to execute the defined tasks
 6. Coordinates task distribution among team members
-7. Syncs documentation upon completion
+7. **(v0.9.0+)** Manages git worktrees for complex plans with on-demand isolation
+8. Syncs documentation upon completion
 
 The core innovation is **intelligent tool matching**: OPTR scans available Claude plugins (skills/agents/commands) and matches PLAN.md content to relevant professional tools, then applies their best practices to optimize tasks.
 
@@ -67,6 +68,26 @@ python3 optr-plugin/skills/optr/scripts/optimize-plan.py [path/to/PLAN.md]
 ```
 Analyzes PLAN.md for vague tasks, oversized tasks, and missing acceptance criteria. Outputs optimization suggestions without creating a team.
 
+### Worktree Management (v0.9.0+)
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py analyze [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py create <task_id> <task_name>
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py list
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py remove <task_id>
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py cleanup --force
+```
+Strategy C: On-demand worktree creation for complex plan execution.
+- **analyze**: Check if worktree support is needed (≥8 tasks, multi-module, or parallel work)
+- **create**: Create isolated worktree for specific tasks (long-running or conflicting)
+- **list/remove/cleanup**: Manage worktree lifecycle
+
+**Worktree creation criteria:**
+- Long-running tasks (> 1 hour estimated)
+- File conflicts with other assigned tasks
+- Explicit `requires_isolation: true` flag
+
+**State tracking**: `.optr-worktrees.json` (add to `.gitignore`)
+
 ## Architecture
 
 ### Skill Structure (Progressive Disclosure)
@@ -81,10 +102,11 @@ The skill follows Claude's progressive disclosure pattern to minimize context us
    - `tool-mapping.md` - Complete keyword → skill/agent/command mappings
    - `team-workflow.md` - Team coordination patterns (TaskCreate, TaskUpdate, SendMessage, TeamDelete)
    - `plan-optimization.md` - PLAN.md formatting best practices
+   - `worktree-workflow.md` - Worktree management reference (v0.9.0+)
 
-4. **Examples/** (working code): `plan-template.md`, `task-creation.py`
+4. **Examples/** (working code): `plan-template.md`, `task-creation.py`, `worktree-example.sh`
 
-5. **Scripts/** (executable utilities): `discover-tools.py`, `optimize-plan.py`
+5. **Scripts/** (executable utilities): `discover-tools.py`, `optimize-plan.py`, `worktree-manager.py`
 
 ### Tool Matching Algorithm
 
@@ -112,17 +134,20 @@ Example mappings:
 
 ### SKILL.md Workflow
 
-The 11-step workflow in SKILL.md is designed for AI execution:
+The 14-step workflow in SKILL.md is designed for AI execution (v0.9.0+):
 
 - **Step 0**: Check for PLAN.md, create template if missing
 - **Step 1**: Read and analyze PLAN.md content
 - **Step 2**: Discover relevant tools (scan plugins, match keywords)
+- **Step 2.5**: Worktree Strategy Decision (conditional - analyze plan complexity)
 - **Step 3**: Optimize with professional guidance (apply matched tools' best practices)
 - **Step 4-7**: Team creation, task generation, spawning, assignment
+- **Step 7.5**: Worktree Assignment (conditional - create worktrees for qualifying tasks)
 - **Step 8**: Monitor task execution
 - **Step 9**: Verify all tasks complete (BLOCKS Step 10)
 - **Step 10**: PLAN.md Clear Confirmation (ask user before clearing)
 - **Step 11**: Auto-sync documentation (README.md, CLAUDE.md, plugin files)
+- **Step 11.5**: Worktree Cleanup (conditional - remove all worktrees)
 
 Each step includes concrete bash commands and tool usage examples.
 
@@ -144,9 +169,13 @@ description: This skill should be used when the user asks to "run optr", "optimi
 {
   "name": "optr",
   "description": "Optimize PLAN.md and create teams to handle tasks",
-  "version": "0.1.0"
+  "version": "0.9.0"
 }
 ```
+
+**Version history:**
+- v0.9.0: Added Strategy C worktree support for complex plans
+- v0.8.0: Enhanced two-phase tool discovery workflow
 
 ## Local Permissions
 
