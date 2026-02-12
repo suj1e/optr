@@ -80,12 +80,12 @@ cat PLAN.md  # Read the plan content
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py PLAN.md
 python3 optr-plugin/skills/optr/scripts/discover-tools.py --verbose PLAN.md  # Show detailed scan info
-python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes PLAN.md  # Auto-search GitHub
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes PLAN.md  # Auto-search marketplace
 ```
 
 **This script uses a TWO-PHASE workflow:**
 
-#### Phase 1: Local Discovery + GitHub Confirmation
+#### Phase 1: Local Discovery + Marketplace Confirmation
 
 ```
 ============================================================
@@ -107,17 +107,17 @@ python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes PLAN.md  # Auto-
 ============================================================
 
 Options:
-  [y] Search GitHub for more tools → See installable plugins
-  [n] Skip GitHub search → Use local tools only
+  [y] Search marketplace for more tools → See installable plugins
+  [n] Skip marketplace search → Use local tools only
   [q] Quit without changes
 
-👉 Search GitHub for additional tools? [y/n/q]:
+👉 Search marketplace for additional tools? [y/n/q]:
 ```
 
-#### Phase 2: GitHub Search + Install Suggestions (if user confirms)
+#### Phase 2: Marketplace Search + Install Suggestions (if user confirms)
 
 ```
-🌐 Searching GitHub for tools...
+🔍 Searching marketplace for relevant plugins...
 
 ============================================================
 🎯 Tool Discovery - Phase 2: Complete Results
@@ -134,41 +134,41 @@ Options:
      Create distinctive, production-grade frontend interfaces
 
 ============================================================
-🌐 Installable GitHub Tools
+🌐 Installable Marketplace Plugins
 ============================================================
 
-💡 Run these commands to install additional tools:
+💡 Run these commands to install additional plugins:
 
-  1. code-reviewer
-     Review pull requests and provide feedback
-     Install: claude plugin add marketplaces/code-reviewer
+  1. code-review
+     Plan mentions 'PR review' and 'code quality checks'
+     Install: claude plugin install code-review@marketplace
 
   2. test-runner
-     Automated test execution and reporting
-     Install: claude plugin add test-org/test-runner
+     Plan describes 'testing' and 'test execution' tasks
+     Install: claude plugin install test-runner@marketplace
 
 ============================================================
 📊 Summary
 ============================================================
   📁 Project-local tools: 0
   🏠 Global installed: 2
-  🌐 GitHub available: 2
+  🌐 Marketplace plugins: 2
   📦 Total matched: 4
 
 ============================================================
 💡 Recommended Installation Commands
 ============================================================
 
-Copy and paste these commands to install additional tools:
+Copy and paste these commands to install additional plugins:
 
-  claude plugin add marketplaces/code-reviewer
-  claude plugin add test-org/test-runner
+  claude plugin install code-review@marketplace
+  claude plugin install test-runner@marketplace
 ```
 
 **Tool Sources Priority:**
 1. **Project-local** (score: 10) - Your project's own tools
 2. **Global local** (score: 5) - Installed in ~/.claude/plugins
-3. **GitHub** (score: 3-5) - Discoverable plugins with `claude plugin add <repo>`
+3. **Marketplace** (score: based on AI matching 0.7-1.0) - Plugins from `claude plugin list --available`
 
 **YOU MUST run this command before proceeding to Step 3.** The script output tells you which tools are available for optimizing PLAN.md.
 
@@ -574,10 +574,15 @@ User types `/optr`:
 ### Utility Scripts
 
 - **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
-- **`scripts/discover-tools.py`** - Two-phase tool discovery with forced output buffering for Claude CLI:
-  - Phase 1: Show local matches, ask about GitHub
-  - Phase 2: Search GitHub and show installable plugins
-  - Options: `--verbose` (detailed scan info), `--yes` (auto-search GitHub)
+- **`scripts/discover-tools.py`** - Two-phase tool discovery with marketplace plugin search:
+  - Phase 1: Show local matches, ask about marketplace
+  - Phase 2: AI semantic matching from marketplace plugins
+  - Options: `--verbose` (detailed scan info), `--yes` (auto-search marketplace)
+- **`scripts/match-plugins.py`** - AI semantic plugin matching:
+  - Queries `claude plugin list --available --json` for marketplace plugins
+  - Uses Claude API to match PLAN.md content with plugin descriptions
+  - Returns plugins with relevance score >= 0.7
+  - Options: `--threshold`, `--api-key`, `--model`, `--verbose`
 - **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities
 - **`scripts/worktree-manager.py`** - Strategy C: On-demand worktree management:
   - `analyze PLAN.md` - Check if worktree support is needed
@@ -585,7 +590,3 @@ User types `/optr`:
   - `remove <task_id>` - Remove worktree after task completion
   - `cleanup` - Clean up all worktrees
   - `list` - List all worktrees
-  - Phase 1: Show local matches, ask about GitHub
-  - Phase 2: Search GitHub and show installable plugins
-  - Options: `--verbose` (detailed scan info), `--yes` (auto-search GitHub)
-- **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities

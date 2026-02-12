@@ -6,132 +6,105 @@ Scans available skills/agents/commands and matches them to PLAN.md content.
 
 Usage:
     python scripts/discover-tools.py [path/to/PLAN.md]
-    python scripts/discover-tools.py --yes [path/to/PLAN.md]  # Skip GitHub prompt
+    python scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search marketplace
 
 This script:
 1. Scans project-local directories (.claude/skills, skills/, etc.)
 2. Scans ~/.claude/plugins for global tools
-3. Shows local matches, asks whether to search GitHub
-4. Searches GitHub for more tools if user confirms
+3. Shows local matches, asks whether to search marketplace
+4. Searches marketplace for plugins using AI semantic matching if user confirms
 5. Outputs final list with install commands
 """
 
 import sys
+import json
 import re
 from pathlib import Path
+from typing import List, Dict, Any
 
 # Force unbuffered output for better visibility in Claude CLI
 sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
 
 
-def search_github_for_tools(keywords):
+def search_marketplace_for_plugins(
+    plan_path: Path,
+    threshold: float = 0.5,
+    verbose: bool = False
+) -> List[Dict[str, Any]]:
     """
-    Search GitHub for Claude Code plugins, skills, and agents.
+    Search the Claude marketplace for plugins using semantic matching.
 
     Args:
-        keywords: List of keywords from PLAN.md content
+        plan_path: Path to the PLAN.md file
+        threshold: Minimum relevance score for including a plugin
+        verbose: Print debug information
 
     Returns:
-        List of tool suggestions with GitHub repo info and install commands
+        List of matched marketplace plugins with install commands
     """
-    online_tools = []
-
-    if not keywords:
-        return online_tools
-
-    # Build search queries
-    queries = []
-    queries.append("Claude Code skill plugin")
-    queries.append("Claude Code agent command")
-
-    for kw in keywords[:3]:
-        if len(kw) > 3:
-            queries.append(f"Claude Code {kw}")
-
-    # Execute searches
-    for query in queries[:5]:
-        try:
-            results = WebSearch(query=query)
-
-            if results:
-                for result in results[:5]:
-                    tool_info = parse_github_result(result)
-                    if tool_info:
-                        online_tools.append(tool_info)
-        except Exception:
-            continue
-
-    return online_tools
-
-
-def parse_github_result(result):
-    """Parse a GitHub search result into tool info format."""
     try:
-        title = result.get('title', '')
-        url = result.get('url', '')
-        snippet = result.get('snippet', '')
+        # Get the directory of this script
+        script_dir = Path(__file__).parent
+        match_plugins_path = script_dir / 'match_plugins.py'
 
-        # Extract repo from URL
-        repo_match = re.search(r'github\.com/([^/]+)/([^/]+)', url)
-        if not repo_match:
-            return None
+        if not match_plugins_path.exists():
+            if verbose:
+                print(f"Warning: match_plugins.py not found at {match_plugins_path}")
+            return []
 
-        owner = repo_match.group(1)
-        repo = repo_match.group(2).replace('.git', '')
+        # Import the module
+        sys.path.insert(0, str(script_dir))
 
-        # Detect tool type
-        tool_type = detect_tool_type(repo, snippet, title)
-        if not tool_type:
-            return None
+        try:
+            from match_plugins import (
+                get_available_plugins,
+                match_plugins_with_claude
+            )
+        except ImportError as e:
+            if verbose:
+                print(f"Warning: Could not import match_plugins module: {e}")
+            return []
 
-        # Generate name from repo
-        name = repo.lower()
-        name = re.sub(r'[^a-z0-9-]', '', name)
+        # Read plan content
+        plan_content = plan_path.read_text()
 
-        # Build description
-        if snippet:
-            description = snippet[:150].strip()
-        else:
-            description = f"{name} - {tool_type} from GitHub"
+        # Get available plugins
+        plugins = get_available_plugins()
 
-        return {
-            'type': tool_type,
-            'name': name,
-            'description': description,
-            'source': 'github',
-            'url': url,
-            'repo': f"{owner}/{repo}",
-            'install_cmd': f"claude plugin add {owner}/{repo}",
-            'relevance_score': 5
-        }
-    except Exception:
-        pass
+        if verbose:
+            print(f"   Found {len(plugins)} marketplace plugins")
 
-    return None
+        if not plugins:
+            return []
 
+        # Match plugins using Claude API
+        matched = match_plugins_with_claude(
+            plan_content=plan_content,
+            plugins=plugins,
+            threshold=threshold,
+            verbose=verbose
+        )
 
-def detect_tool_type(repo_name, snippet, title):
-    """Detect if the repo is a skill, agent, command, or plugin."""
-    text = (repo_name + ' ' + snippet + ' ' + title).lower()
+        # Convert to expected format with 'type' field
+        for plugin in matched:
+            if 'type' not in plugin:
+                # Detect type from name/description
+                name_lower = plugin.get('name', '').lower()
+                desc_lower = plugin.get('description', '').lower()
 
-    if 'command' in text or 'slash' in text:
-        return 'command'
-    if 'agent' in text or repo_name.lower() == 'agent':
-        return 'agent'
-    if 'skill' in text:
-        return 'skill'
+                if 'command' in name_lower or 'slash' in desc_lower:
+                    plugin['type'] = 'command'
+                elif 'agent' in name_lower:
+                    plugin['type'] = 'agent'
+                else:
+                    plugin['type'] = 'skill'
 
-    if 'command' in repo_name.lower():
-        return 'command'
-    if 'agent' in repo_name.lower():
-        return 'agent'
-    if 'skill' in repo_name.lower():
-        return 'skill'
+        return matched
 
-    if 'claude' in text:
-        return 'skill'
-
-    return None
+    except Exception as e:
+        if verbose:
+            print(f"Warning: Error searching marketplace: {e}")
+        return []
 
 
 def scan_tools():
@@ -338,7 +311,7 @@ def merge_and_score_tools(local_tools, online_tools, project_tools, plan_keyword
 
 
 def print_local_matches(project_tools, local_tools, matched_tools):
-    """Print matched local tools (project + global) and ask about GitHub search."""
+    """Print matched local tools (project + global) and ask about marketplace search."""
     # Force flush output to ensure it displays before input prompt
     sys.stdout.flush()
 
@@ -368,36 +341,36 @@ def print_local_matches(project_tools, local_tools, matched_tools):
             print(f"     {desc}")
     else:
         print("\n⚠️  No local tools matched to your PLAN.md content.")
-        print("💡 Consider searching GitHub for relevant tools.")
+        print("💡 Consider searching the marketplace for relevant tools.")
         sys.stdout.flush()
 
     print("\n" + "=" * 60)
     print("\nOptions:")
-    print("  [y] Search GitHub for more tools → See installable plugins")
-    print("  [n] Skip GitHub search → Use local tools only")
+    print("  [y] Search marketplace for more tools → See installable plugins")
+    print("  [n] Skip marketplace search → Use local tools only")
     print("  [q] Quit without changes")
     sys.stdout.flush()
 
-    choice = input("\n👉 Search GitHub for additional tools? [y/n/q]: ").strip().lower()
+    choice = input("\n👉 Search marketplace for additional tools? [y/n/q]: ").strip().lower()
 
     if choice == 'y':
         return True
     elif choice == 'q':
-        print("\n👋 Exiting without GitHub search.")
+        print("\n👋 Exiting without marketplace search.")
         sys.exit(0)
     else:
-        print("\n⏭️  Skipping GitHub search. Using local tools only.")
+        print("\n⏭️  Skipping marketplace search. Using local tools only.")
         return False
 
 
-def print_final_report(matched_tools, searched_github=False):
+def print_final_report(matched_tools, searched_marketplace=False):
     """Print final report with all matched tools."""
     print("\n" + "=" * 60)
     print("🎯 Final Tool Discovery Results")
     print("=" * 60)
 
-    if searched_github:
-        print("\n🌐 Including GitHub-sourced tools")
+    if searched_marketplace:
+        print("\n🌐 Including marketplace-sourced plugins")
     else:
         print("\n📦 Using local tools only")
 
@@ -408,7 +381,7 @@ def print_final_report(matched_tools, searched_github=False):
     # Separate tools by source
     project_tools = [t for t in matched_tools if t.get('source') == 'project']
     local_tools = [t for t in matched_tools if t.get('source') == 'local']
-    github_tools = [t for t in matched_tools if t.get('source') == 'github']
+    marketplace_tools = [t for t in matched_tools if t.get('source') == 'marketplace']
 
     # Section 1: Available Local Tools
     if project_tools or local_tools:
@@ -425,20 +398,31 @@ def print_final_report(matched_tools, searched_github=False):
                 desc = desc[:67] + "..."
             print(f"     {desc}")
 
-    # Section 2: Installable GitHub Tools
-    if github_tools:
+    # Section 2: Installable Marketplace Plugins
+    if marketplace_tools:
         print(f"\n" + "=" * 60)
-        print("🌐 Installable GitHub Tools")
+        print("🌐 Installable Marketplace Plugins")
         print("=" * 60)
-        print("\n💡 Run these commands to install additional tools:\n")
+        print("\n💡 Run these commands to install additional plugins:\n")
 
-        for i, tool in enumerate(github_tools, 1):
+        for i, tool in enumerate(marketplace_tools, 1):
             print(f"  {i}. {tool.get('name', 'unknown')}")
             desc = tool.get('description', 'N/A')
             if len(desc) > 70:
                 desc = desc[:67] + "..."
             print(f"     {desc}")
+
+            # Show relevance score if available
+            score = tool.get('relevance_score')
+            if score is not None:
+                print(f"     Relevance: {score:.2f}")
+
             print(f"     Install: {tool.get('install_cmd')}")
+
+            # Show match reason if available
+            reason = tool.get('match_reason')
+            if reason:
+                print(f"     Reason: {reason[:100]}{'...' if len(reason) > 100 else ''}")
 
     # Section 3: Summary
     print(f"\n" + "=" * 60)
@@ -446,12 +430,12 @@ def print_final_report(matched_tools, searched_github=False):
     print("=" * 60)
     print(f"  📁 Project-local tools: {len(project_tools)}")
     print(f"  🏠 Global installed: {len(local_tools)}")
-    print(f"  🌐 GitHub available: {len(github_tools)}")
+    print(f"  🌐 Marketplace available: {len(marketplace_tools)}")
     print(f"  📦 Total matched: {len(matched_tools)}")
 
 
 def main():
-    # Check for --yes flag (skip GitHub search prompt)
+    # Check for --yes flag (skip marketplace search prompt)
     auto_yes = '--yes' in sys.argv
     # Check for --verbose flag (show more details)
     verbose = '--verbose' in sys.argv
@@ -488,36 +472,36 @@ def main():
         print(f"   Matched: {len(local_matched)} tools")
         sys.stdout.flush()
 
-    # Show local matches and ask about GitHub search
+    # Show local matches and ask about marketplace search
     if auto_yes:
-        searched_github = True
-        print("\n🌐 Auto-searching GitHub (--yes flag)")
+        searched_marketplace = True
+        print("\n🌐 Auto-searching marketplace (--yes flag)")
     else:
-        searched_github = print_local_matches(project_tools, local_tools, local_matched)
+        searched_marketplace = print_local_matches(project_tools, local_tools, local_matched)
 
-    online_tools = []
-    if searched_github:
-        print("\n🌐 Searching GitHub for tools...")
-        online_tools = search_github_for_tools(plan_keywords)
+    marketplace_tools = []
+    if searched_marketplace:
+        print("\n🌐 Searching marketplace for plugins...")
+        marketplace_tools = search_marketplace_for_plugins(plan_path, verbose=verbose)
 
     # Final merge of all tools
-    matched_tools = merge_and_score_tools(local_tools, online_tools, project_tools, plan_keywords)
+    matched_tools = merge_and_score_tools(local_tools, marketplace_tools, project_tools, plan_keywords)
 
     # Print phase 2 results
     print("\n" + "=" * 60)
     print("🎯 Tool Discovery - Phase 2: Complete Results")
     print("=" * 60)
 
-    print_final_report(matched_tools, searched_github)
+    print_final_report(matched_tools, searched_marketplace)
 
     # Final recommendations
-    github_tools = [t for t in matched_tools if t.get('source') == 'github']
-    if github_tools:
+    marketplace_plugins = [t for t in matched_tools if t.get('source') == 'marketplace']
+    if marketplace_plugins:
         print(f"\n" + "=" * 60)
         print("💡 Recommended Installation Commands")
         print("=" * 60)
-        print("\nCopy and paste these commands to install additional tools:\n")
-        for tool in github_tools:
+        print("\nCopy and paste these commands to install additional plugins:\n")
+        for tool in marketplace_plugins:
             print(f"  {tool.get('install_cmd')}")
         print()
 

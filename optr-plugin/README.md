@@ -117,6 +117,7 @@ optr-plugin/
 │       └── scripts/          # Utility scripts
 │           ├── sync-docs.py          # Documentation sync script ✨
 │           ├── discover-tools.py      # Tool discovery script
+│           ├── match-plugins.py      # AI semantic plugin matching
 │           └── optimize-plan.py      # Plan analysis script
 └── README.md
 ```
@@ -157,13 +158,25 @@ Automatically synchronizes all project documentation after task completion:
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
 python3 optr-plugin/skills/optr/scripts/discover-tools.py --verbose [path/to/PLAN.md]  # Detailed scan info
-python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search GitHub
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search marketplace
 ```
 
-Two-phase tool discovery with forced output buffering for Claude CLI:
-- **Phase 1**: Scans local tools, shows matches, asks about GitHub search
-- **Phase 2**: If confirmed, searches GitHub and shows installable plugins
-- **Options**: `--verbose` for detailed scan info, `--yes` to skip GitHub prompt
+Two-phase tool discovery with AI semantic matching from marketplace:
+- **Phase 1**: Scans local tools, shows matches, asks about marketplace search
+- **Phase 2**: If confirmed, uses AI to match PLAN.md with available marketplace plugins
+- **Options**: `--verbose` for detailed scan info, `--yes` to skip marketplace prompt
+
+### Marketplace Plugin Matching
+
+```bash
+python3 optr-plugin/skills/optr/scripts/match-plugins.py [path/to/PLAN.md]
+```
+
+Uses AI semantic analysis to match PLAN.md content with marketplace plugins:
+- Queries `claude plugin list --available --json` for available plugins
+- Uses Claude API to match based on semantic relevance (not just keywords)
+- Returns plugins with relevance score >= 0.7
+- Options: `--threshold <0.0-1.0>` (default: 0.7), `--api-key`, `--model`, `--verbose`
 
 ### Plan Analysis
 

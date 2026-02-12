@@ -1,0 +1,58 @@
+[
+  {
+    "name": "frontend-design",
+    "description": "Frontend design skill for creating beautiful user interfaces",
+    "summary": "Create responsive UI components with modern design patterns",
+    "repository": "marketplaces/frontend-design",
+    "version": "1.0.0"
+  },
+  {
+    "name": "code-review",
+    "description": "Automated code review assistant for security and best practices",
+    "summary": "Review code for security vulnerabilities, style issues, and best practices",
+    "repository": "marketplaces/code-review",
+    "version": "2.1.0"
+  },
+  {
+    "name": "api-development",
+    "description": "RESTful API development tools",
+    "summary": "Build and document REST APIs with best practices",
+    "repository": "marketplaces/api-development",
+    "version": "1.5.0"
+  },
+  {
+    "name": "database-tools",
+    "description": "Database schema design and optimization tools",
+    "summary": "Design efficient database schemas and optimize queries",
+    "repository": "marketplaces/database-tools",
+    "version": "1.2.0"
+  },
+  {
+    "name": "testing-framework",
+    "description": "Comprehensive testing framework for unit and integration tests",
+    "summary": "Write and run unit tests, integration tests, and end-to-end tests",
+    "repository": "marketplaces/testing-framework",
+    "version": "3.0.0"
+  },
+  {
+    "name": "ci-cd",
+    "description": "CI/CD pipeline configuration and automation",
+    "summary": "Set up continuous integration and deployment pipelines",
+    "repository": "marketplaces/ci-cd",
+    "version": "1.8.0"
+  },
+  {
+    "name": "documentation",
+    "description": "Documentation generation and maintenance tools",
+    "summary": "Generate API docs, user guides, and technical documentation",
+    "repository": "marketplaces/documentation",
+    "version": "2.0.0"
+  },
+  {
+    "name": "security-scanner",
+    "description": "Security vulnerability scanner for web applications",
+    "summary": "Scan code for common security vulnerabilities and OWASP Top 10 issues",
+    "repository": "marketplaces/security-scanner",
+    "version": "1.3.0"
+  }
+]

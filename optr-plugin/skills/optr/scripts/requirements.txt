@@ -1,0 +1,5 @@
+# OPTR Script Dependencies
+# Python packages required for OPTR skill scripts
+
+# Anthropic SDK for Claude API access (marketplace plugin matching)
+anthropic>=0.18.0
