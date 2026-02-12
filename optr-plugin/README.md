@@ -156,12 +156,14 @@ Automatically synchronizes all project documentation after task completion:
 
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --verbose [path/to/PLAN.md]  # Detailed scan info
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search GitHub
 ```
 
-Scans available tools and matches them to your PLAN.md content:
-- Shows available skills/agents/commands
-- Calculates relevance scores
-- Outputs matched tools with keywords
+Two-phase tool discovery with forced output buffering for Claude CLI:
+- **Phase 1**: Scans local tools, shows matches, asks about GitHub search
+- **Phase 2**: If confirmed, searches GitHub and shows installable plugins
+- **Options**: `--verbose` for detailed scan info, `--yes` to skip GitHub prompt
 
 ### Plan Analysis
 

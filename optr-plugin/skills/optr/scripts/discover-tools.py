@@ -20,6 +20,9 @@ import sys
 import re
 from pathlib import Path
 
+# Force unbuffered output for better visibility in Claude CLI
+sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
+
 
 def search_github_for_tools(keywords):
     """
@@ -336,13 +339,18 @@ def merge_and_score_tools(local_tools, online_tools, project_tools, plan_keyword
 
 def print_local_matches(project_tools, local_tools, matched_tools):
     """Print matched local tools (project + global) and ask about GitHub search."""
+    # Force flush output to ensure it displays before input prompt
+    sys.stdout.flush()
+
     print("\n" + "=" * 60)
     print("🎯 Tool Discovery - Phase 1: Local Tools")
     print("=" * 60)
+    sys.stdout.flush()
 
     # Show summary
     print(f"\n📁 Project-local: {len(project_tools.get('skills', []))} skills, {len(project_tools.get('agents', []))} agents, {len(project_tools.get('commands', []))} commands")
     print(f"📦 Global installed: {len(local_tools.get('skills', []))} skills, {len(local_tools.get('agents', []))} agents, {len(local_tools.get('commands', []))} commands")
+    sys.stdout.flush()
 
     if matched_tools:
         print(f"\n✅ Local tools matched to your PLAN.md:")
@@ -361,12 +369,14 @@ def print_local_matches(project_tools, local_tools, matched_tools):
     else:
         print("\n⚠️  No local tools matched to your PLAN.md content.")
         print("💡 Consider searching GitHub for relevant tools.")
+        sys.stdout.flush()
 
     print("\n" + "=" * 60)
     print("\nOptions:")
     print("  [y] Search GitHub for more tools → See installable plugins")
     print("  [n] Skip GitHub search → Use local tools only")
     print("  [q] Quit without changes")
+    sys.stdout.flush()
 
     choice = input("\n👉 Search GitHub for additional tools? [y/n/q]: ").strip().lower()
 
@@ -441,15 +451,16 @@ def print_final_report(matched_tools, searched_github=False):
 
 
 def main():
+    # Check for --yes flag (skip GitHub search prompt)
+    auto_yes = '--yes' in sys.argv
+    # Check for --verbose flag (show more details)
+    verbose = '--verbose' in sys.argv
+    sys.argv = [a for a in sys.argv if a not in ['--yes', '--verbose']]
+
     if len(sys.argv) < 2:
         plan_path = Path.cwd() / 'PLAN.md'
     else:
         plan_path = Path(sys.argv[1])
-
-    # Check for --yes flag (skip GitHub search prompt)
-    auto_yes = '--yes' in sys.argv
-    if auto_yes:
-        sys.argv = [a for a in sys.argv if a != '--yes']
 
     if not plan_path.exists():
         print(f"Error: PLAN.md not found at {plan_path}")
@@ -458,14 +469,24 @@ def main():
     plan_content = plan_path.read_text()
     plan_keywords = extract_keywords_from_plan(plan_content)
 
+    if verbose:
+        print(f"📝 Extracted keywords: {plan_keywords}")
+
     print("📁 Scanning for project-local tools...")
     project_tools = scan_project_tools()
+    if verbose:
+        print(f"   Found: {len(project_tools.get('skills', []))} skills, {len(project_tools.get('agents', []))} agents, {len(project_tools.get('commands', []))} commands")
 
     print("🔍 Scanning for global local tools...")
     local_tools = scan_tools()
+    if verbose:
+        print(f"   Found: {len(local_tools.get('skills', []))} skills, {len(local_tools.get('agents', []))} agents, {len(local_tools.get('commands', []))} commands")
 
     # Merge local tools only for initial matching
     local_matched = merge_and_score_tools(local_tools, [], project_tools, plan_keywords)
+    if verbose:
+        print(f"   Matched: {len(local_matched)} tools")
+        sys.stdout.flush()
 
     # Show local matches and ask about GitHub search
     if auto_yes:

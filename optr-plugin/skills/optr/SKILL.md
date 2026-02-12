@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -79,6 +79,8 @@ cat PLAN.md  # Read the plan content
 
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py PLAN.md
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --verbose PLAN.md  # Show detailed scan info
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes PLAN.md  # Auto-search GitHub
 ```
 
 **This script uses a TWO-PHASE workflow:**
@@ -429,5 +431,8 @@ User types `/optr`:
 ### Utility Scripts
 
 - **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
-- **`scripts/discover-tools.py`** - Two-phase tool discovery: (1) Show local matches, ask about GitHub, (2) Search GitHub and show installable plugins with clear installation commands
+- **`scripts/discover-tools.py`** - Two-phase tool discovery with forced output buffering for Claude CLI:
+  - Phase 1: Show local matches, ask about GitHub
+  - Phase 2: Search GitHub and show installable plugins
+  - Options: `--verbose` (detailed scan info), `--yes` (auto-search GitHub)
 - **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities

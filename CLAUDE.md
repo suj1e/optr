@@ -40,9 +40,10 @@ Automatically updates PLAN.md, README.md, and CLAUDE.md after task completion.
 ### Tool Discovery
 ```bash
 python3 optr-plugin/skills/optr/scripts/discover-tools.py [path/to/PLAN.md]
+python3 optr-plugin/skills/optr/scripts/discover-tools.py --verbose [path/to/PLAN.md]  # Detailed scan info
 python3 optr-plugin/skills/optr/scripts/discover-tools.py --yes [path/to/PLAN.md]  # Auto-search GitHub
 ```
-Two-phase workflow that discovers Claude Code tools from three sources:
+Two-phase workflow with forced output buffering for Claude CLI:
 1. **Project-local**: Scans `.claude/skills/`, `skills/`, `.claude/agents/`, `agents/`, `.claude/commands/`, `commands/`
 2. **Global**: Scans `~/.claude/plugins` for installed skills/agents/commands
 3. **GitHub**: Uses WebSearch to find relevant plugins (after user confirms)
