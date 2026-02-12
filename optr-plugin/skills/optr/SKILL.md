@@ -1,7 +1,7 @@
 ---
 name: optr
 description: This skill should be used when the user asks to "run optr", "optimize PLAN.md", "create team for plan", "execute plan tasks", "automate task execution", or mentions project automation with teams. Automatically optimizes PLAN.md, creates a team to handle the defined tasks, and synchronizes all project documentation and scripts upon completion.
-version: 0.8.0
+version: 0.9.0
 ---
 
 # OPTR - Optimizer & Team Runner
@@ -172,6 +172,46 @@ Copy and paste these commands to install additional tools:
 
 **YOU MUST run this command before proceeding to Step 3.** The script output tells you which tools are available for optimizing PLAN.md.
 
+### Step 2.5: Worktree Strategy Decision (Conditional)
+
+**Analyze plan complexity for worktree support:**
+
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py analyze PLAN.md
+```
+
+**Exit codes:**
+- `0` - Single worktree sufficient (simple plan)
+- `1` - Worktree support recommended (complex plan)
+
+**Analysis output shows:**
+```
+============================================================
+Worktree Analysis for PLAN.md
+============================================================
+Task count: 12
+Has modules: true
+Has parallel work: false
+
+Recommendation: ENABLE worktree support
+Reason: High task count (12 tasks)
+============================================================
+```
+
+**If worktree support is recommended:**
+1. Enable worktree mode for this session
+2. Continue to Step 3 (plan optimization)
+3. Worktrees will be created on-demand during task assignment (Step 6.5)
+
+**If single worktree is sufficient:**
+- Skip worktree features, use standard workflow
+
+**Strategy C: On-demand Worktree Creation**
+Worktrees are created only when needed based on task characteristics:
+- Long-running tasks (> 1 hour estimated)
+- Tasks with file conflicts (overlapping file paths)
+- Tasks explicitly marked with `requires_isolation: true`
+
 ### Step 3: Optimize PLAN.md with Professional Guidance
 
 **CRITICAL: Run optimize-plan.py first!**
@@ -262,6 +302,53 @@ Task(
 - Skill creation → Assign to teammate with skill-development knowledge
 - Code review → Assign to teammate with code-review expertise
 
+### Step 7.5: Worktree Assignment (If Enabled)
+
+**Only execute if worktree support was enabled in Step 2.5:**
+
+For each task being assigned, check if it needs a dedicated worktree:
+
+```bash
+# Check if task should use worktree (example task JSON)
+echo '{"id":"task-1","name":"Build frontend","files":["src/frontend/*"],"estimated_hours":2}' | \
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py should-use --json -
+```
+
+**If task needs worktree:**
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py create \
+  <task_id> \
+  "<task_name>" \
+  --branch main
+```
+
+**Example output:**
+```
+Created worktree for task 'Build frontend':
+  Path: /path/to/project/.optr-worktree-task-1
+  Branch: optr/task-task-1
+
+Use this path when assigning task to teammate:
+  cd /path/to/project/.optr-worktree-task-1
+```
+
+**When spawning teammate for worktree task:**
+- Include worktree path in teammate's context
+- Teammate works in isolated environment
+- Changes remain in worktree branch until merged
+
+**Task assignment with worktree metadata:**
+```python
+TaskUpdate(
+  taskId="task-1",
+  owner="developer-1",
+  metadata={
+    "worktree_path": "/path/to/project/.optr-worktree-task-1",
+    "branch": "optr/task-task-1"
+  }
+)
+```
+
 ### Step 8: Monitor Task Execution
 
 1. **Check progress:**
@@ -310,10 +397,64 @@ Options:
 python3 optr-plugin/skills/optr/scripts/sync-docs.py
 ```
 
+### Step 11.5: Worktree Cleanup (If Enabled)
+
+**Only execute if worktree support was enabled in Step 2.5:**
+
+**List active worktrees:**
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py list
+```
+
+**Remove individual worktree after task completes and PR is merged:**
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py remove <task_id>
+```
+
+**Clean up all worktrees at end of session:**
+```bash
+python3 optr-plugin/skills/optr/scripts/worktree-manager.py cleanup --force
+```
+
 **Then commit changes:**
 ```bash
 git add PLAN.md README.md CLAUDE.md optr-plugin/
 git commit -m "docs: update documentation"
+```
+
+## Worktree State File
+
+The worktree manager creates `.optr-worktrees.json` in the repo root to track:
+- Active worktrees and their assignments
+- Task-to-worktree mappings
+- Branch names for each worktree
+
+**Format:**
+```json
+{
+  "worktrees": {
+    "task-1": {
+      "task_id": "task-1",
+      "task_name": "Build frontend",
+      "path": "/path/to/project/.optr-worktree-task-1",
+      "branch": "optr/task-task-1",
+      "created": true
+    }
+  },
+  "task_assignments": {
+    "task-1": {
+      "task_name": "Build frontend",
+      "worktree": ".optr-worktree-task-1",
+      "branch": "optr/task-task-1"
+    }
+  }
+}
+```
+
+**Add to .gitignore:**
+```bash
+echo ".optr-worktrees.json" >> .gitignore
+echo ".optr-worktree-*/" >> .gitignore
 ```
 
 ## Best Practices
@@ -330,6 +471,8 @@ git commit -m "docs: update documentation"
 - **Verify all tasks complete** - only clear PLAN.md when ALL tasks done (Step 9)
 - **Ask before clearing** - let user decide whether to reset PLAN.md (Step 10)
 - **Sync documentation** - auto-update docs after task completion (Step 11)
+- **Use worktrees for complex plans** - enable worktree support when recommended (Step 2.5)
+- **Clean up worktrees** - remove worktrees after tasks complete (Step 11.5)
 
 ## Handling Missing PLAN.md
 
@@ -432,6 +575,16 @@ User types `/optr`:
 
 - **`scripts/sync-docs.py`** - Auto-sync PLAN.md, README.md, CLAUDE.md after task completion
 - **`scripts/discover-tools.py`** - Two-phase tool discovery with forced output buffering for Claude CLI:
+  - Phase 1: Show local matches, ask about GitHub
+  - Phase 2: Search GitHub and show installable plugins
+  - Options: `--verbose` (detailed scan info), `--yes` (auto-search GitHub)
+- **`scripts/optimize-plan.py`** - Analyze PLAN.md for optimization opportunities
+- **`scripts/worktree-manager.py`** - Strategy C: On-demand worktree management:
+  - `analyze PLAN.md` - Check if worktree support is needed
+  - `create <task_id> <task_name>` - Create worktree for task
+  - `remove <task_id>` - Remove worktree after task completion
+  - `cleanup` - Clean up all worktrees
+  - `list` - List all worktrees
   - Phase 1: Show local matches, ask about GitHub
   - Phase 2: Search GitHub and show installable plugins
   - Options: `--verbose` (detailed scan info), `--yes` (auto-search GitHub)
